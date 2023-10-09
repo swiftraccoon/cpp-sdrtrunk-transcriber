@@ -6,15 +6,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 find_package(CURL REQUIRED)
 
+# For the main executable
 add_executable(sdrTrunkTranscriber main.cpp curlHelper.cpp)
+target_link_libraries(sdrTrunkTranscriber CURL::libcurl)
 
-# Add GoogleTest
+# For tests
 enable_testing()
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
-# Create test executable
-add_executable(runTests test.cpp)
-target_link_libraries(runTests ${GTEST_LIBRARIES} pthread)
-
-target_link_libraries(sdrTrunkTranscriber CURL::libcurl)
+add_executable(runTests test.cpp curlHelper.cpp)  # Include curlHelper.cpp here
+target_link_libraries(runTests ${GTEST_LIBRARIES} pthread CURL::libcurl)  # Include CURL::libcurl here

@@ -2,20 +2,23 @@
 #include <stdexcept>
 
 const std::string API_URL = "https://api.openai.com/v1/audio/transcriptions";
-extern const char* ENV_OPENAI_API_KEY;
+const char* ENV_OPENAI_API_KEY = std::getenv("OPENAI_API_KEY");
 
+// Callback function to write the CURL response to a string
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
     ((std::string *)userp)->append((char *)contents, size * nmemb);
     return size * nmemb;
 }
 
+// Setup CURL headers
 void setupCurlHeaders(CURL *curl, struct curl_slist *&headers)
 {
     headers = curl_slist_append(headers, ("Authorization: Bearer " + std::string(ENV_OPENAI_API_KEY)).c_str());
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 }
 
+// Setup CURL post fields
 void setupCurlPostFields(CURL *curl, curl_mime *&mime, const std::string &file_path)
 {
     curl_mimepart *part;
@@ -48,6 +51,7 @@ void setupCurlPostFields(CURL *curl, curl_mime *&mime, const std::string &file_p
     curl_mime_data(part, "en", CURL_ZERO_TERMINATED);
 }
 
+// Make a CURL request and return the response
 std::string makeCurlRequest(CURL *curl, curl_mime *mime)
 {
     std::string response;
@@ -62,6 +66,7 @@ std::string makeCurlRequest(CURL *curl, curl_mime *mime)
     return response;
 }
 
+// Transcribe audio using CURL
 std::string curl_transcribe_audio(const std::string &file_path)
 {
     CURL *curl = curl_easy_init();
