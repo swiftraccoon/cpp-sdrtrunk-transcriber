@@ -1,0 +1,10 @@
+# Configuration for C++ SDRTrunk Transcriber
+
+# Directory to monitor for new MP3 files
+DirectoryToMonitor: "/path/to/monitor"
+
+# Number of seconds to wait before looping
+LoopWaitSeconds: 5
+
+# OpenAI API Key for transcription
+OpenAI_API_KEY: "your_openai_api_key_here"
