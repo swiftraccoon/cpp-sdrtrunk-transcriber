@@ -7,4 +7,11 @@ DirectoryToMonitor: "/path/to/monitor"
 LoopWaitSeconds: 5
 
 # OpenAI API Key for transcription
-OpenAI_API_KEY: "your_openai_api_key_here"
+OPENAI_API_KEY: "your_OPENAI_API_KEY_here"
+
+XML_PATH: "/home/YOUR_USER/SDRTrunk/playlist/default.xml"
+DATABASE_PATH: "/home/YOUR_USER/SDRTrunk/recordings.db"
+TEN_SIGN_FILE: "/home/YOUR_USER/SDRTrunk/Some_Co_NC_TENSIGN.txt"
+CALLSIGNS_PATH: "/home/YOUR_USER/SDRTrunk/callsigns.db"
+NCSHP_TEN_SIGN_FILE: "/home/YOUR_USER/SDRTrunk/NCSHP_TENCODE.txt"
+SIGNALS_FILE: "/home/YOUR_USER/SDRTrunk/NCSHP_SIGNALS.txt"
