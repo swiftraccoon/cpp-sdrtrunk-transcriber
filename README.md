@@ -23,12 +23,18 @@ This project is designed to monitor a directory for SDRTrunk MP3 files, categori
     Run cmake . to generate the Makefile.
     Run make to compile the project.
 
+Or check Releases.
+
 ## Configuration
 
 A sample configuration file is provided (sample-config.yaml). 
+
 Edit this file to specify the directory to monitor, OpenAI API key, and other settings.
+
 `mv sample-config.yaml config.yaml`
+
 The script assumes `config.yaml` is in the directory of the binary. If it isn't going to be, ensure to specify with `-c`
+
 ## Usage
 
 Run the compiled binary with the following options:
