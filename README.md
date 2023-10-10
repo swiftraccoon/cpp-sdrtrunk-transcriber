@@ -1,3 +1,4 @@
+(Python version: https://github.com/swiftraccoon/sdrtrunk-transcriber)
 # C++ SDRTrunk Transcriber
 ## Overview
 
