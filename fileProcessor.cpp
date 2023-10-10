@@ -37,33 +37,31 @@ void find_and_move_mp3_without_txt(const std::string &directoryToMonitor) {
     }
 }
 
-double getMP3Duration(const std::string& mp3FilePath) {
+std::string getMP3Duration(const std::string& mp3FilePath) {
     std::stringstream cmd;
     cmd << "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " << mp3FilePath;
-    
+
     // Execute the ffprobe command and capture the output
     FILE* pipe = popen(cmd.str().c_str(), "r");
     if (!pipe) {
         std::cerr << "Error executing ffprobe." << std::endl;
-        return -1.0; // Return -1 to indicate an error
+        return "Unknown"; // Return -1 to indicate an error
     }
-    
+
     char buffer[128];
     std::string durationStr;
     while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
         durationStr += buffer;
     }
-    
+
     pclose(pipe);
-    
+
     // Remove any trailing newline characters
     durationStr.erase(durationStr.find_last_not_of("\n\r") + 1);
 
-    // Convert the duration string to a double
-    double duration = std::stod(durationStr);
-    
-    return duration;
+    return durationStr;
 }
+
 
 int generateUnixTimestamp(const std::string& date, const std::string& time) {
     std::tm tm = {};
