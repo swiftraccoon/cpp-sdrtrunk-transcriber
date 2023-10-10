@@ -1,5 +1,3 @@
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
 #include <fstream>
 #include <iostream>
 #include <chrono>
@@ -39,28 +37,32 @@ void find_and_move_mp3_without_txt(const std::string &directoryToMonitor) {
     }
 }
 
-double getMP3Duration(const std::string& file_path) {
-    // Open the file
-    AVFormatContext *format_ctx = nullptr;
-    if (avformat_open_input(&format_ctx, file_path.c_str(), nullptr, nullptr) != 0) {
-        std::cerr << "Could not open file: " << file_path << std::endl;
-        return -1.0;
+double getMP3Duration(const std::string& mp3FilePath) {
+    std::stringstream cmd;
+    cmd << "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " << mp3FilePath;
+    
+    // Execute the ffprobe command and capture the output
+    FILE* pipe = popen(cmd.str().c_str(), "r");
+    if (!pipe) {
+        std::cerr << "Error executing ffprobe." << std::endl;
+        return -1.0; // Return -1 to indicate an error
     }
-
-    // Retrieve stream information
-    if (avformat_find_stream_info(format_ctx, nullptr) < 0) {
-        std::cerr << "Could not find stream information." << std::endl;
-        return -1.0;
+    
+    char buffer[128];
+    std::string durationStr;
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+        durationStr += buffer;
     }
+    
+    pclose(pipe);
+    
+    // Remove any trailing newline characters
+    durationStr.erase(durationStr.find_last_not_of("\n\r") + 1);
 
-    // Get the duration
-    int64_t duration = format_ctx->duration;
-    double duration_in_seconds = static_cast<double>(duration) / AV_TIME_BASE;
-
-    // Close the file
-    avformat_close_input(&format_ctx);
-
-    return duration_in_seconds;
+    // Convert the duration string to a double
+    double duration = std::stod(durationStr);
+    
+    return duration;
 }
 
 int generateUnixTimestamp(const std::string& date, const std::string& time) {
@@ -98,7 +100,7 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
         {
             std::filesystem::create_directory(subDir);
         }
-
+        fileData.duration = getMP3Duration(file_path);
         // Move MP3 and TXT files to subdirectory
         std::filesystem::rename(file_path, subDir / filename);
         std::filesystem::rename(txt_filename, subDir / txt_filename);
@@ -115,7 +117,6 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
         fileData.unixtime = generateUnixTimestamp(fileData.date, fileData.time);
         fileData.talkgroupID = std::stoi(talkgroupID);
         fileData.radioID = std::stoi(radioID);
-        fileData.duration = getMP3Duration(file_path);
         fileData.filename = filename;
         fileData.filepath = file_path;
         fileData.transcription = transcription;
