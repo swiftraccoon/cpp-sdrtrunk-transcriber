@@ -1,5 +1,28 @@
 #include <gtest/gtest.h>
 #include "curlHelper.h"
+#include <yaml-cpp/yaml.h>
+
+std::string OPENAI_API_KEY;
+
+void SetUpConfig() {
+    YAML::Node config;
+    try {
+        config = YAML::LoadFile("config.yaml");
+    } catch (const YAML::BadFile& e) {
+        std::cerr << "Error: Could not open config.yaml" << std::endl;
+        exit(1);
+    }
+
+    std::cout << "Debug: " << config << std::endl;  // Debug print
+
+    if (config["OPENAI_API_KEY"]) {
+        OPENAI_API_KEY = config["OPENAI_API_KEY"].as<std::string>();
+    } else {
+        std::cerr << "Error: OPENAI_API_KEY not found in config.yaml" << std::endl;
+        exit(1);
+    }
+}
+
 
 TEST(CurlHelperTest, WriteCallback) {
     std::string data = "test_data";
@@ -16,9 +39,8 @@ TEST(CurlHelperTest, WriteCallback) {
 TEST(CurlHelperTest, SetupCurlHeaders) {
     CURL *curl = curl_easy_init();
     struct curl_slist *headers = NULL;
-    const char* ENV_OPENAI_API_KEY = std::getenv("OPENAI_API_KEY");
 
-    setupCurlHeaders(curl, headers);
+    setupCurlHeaders(curl, headers, OPENAI_API_KEY);
 
     ASSERT_NE(headers, nullptr);
     // Additional checks can be added here
@@ -49,9 +71,8 @@ TEST(CurlHelperTest, MakeCurlRequest) {
 
 TEST(CurlHelperTest, CurlTranscribeAudio) {
     std::string file_path = "test_file_path";
-    const char* ENV_OPENAI_API_KEY = std::getenv("OPENAI_API_KEY");
 
-    std::string response = curl_transcribe_audio(file_path);
+    std::string response = curl_transcribe_audio(file_path, OPENAI_API_KEY);
 
     // Replace this with expected response
     std::string expected_response = "expected_response";
@@ -60,6 +81,7 @@ TEST(CurlHelperTest, CurlTranscribeAudio) {
 }
 
 int main(int argc, char **argv) {
+    SetUpConfig();
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

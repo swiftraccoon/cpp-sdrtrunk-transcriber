@@ -13,7 +13,7 @@ pkg_check_modules(TAGLIB REQUIRED taglib)
 add_subdirectory(yaml-cpp)
 
 # For the main executable
-add_executable(sdrTrunkTranscriber main.cpp curlHelper.cpp)
+add_executable(sdrTrunkTranscriber main.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp)
 target_include_directories(sdrTrunkTranscriber PUBLIC ${TAGLIB_INCLUDE_DIRS})
 target_link_libraries(sdrTrunkTranscriber CURL::libcurl yaml-cpp SQLite::SQLite3 ${TAGLIB_LIBRARIES})
 
@@ -22,5 +22,5 @@ enable_testing()
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
-add_executable(runTests test.cpp curlHelper.cpp)  
-target_link_libraries(runTests ${GTEST_LIBRARIES} pthread CURL::libcurl yaml-cpp SQLite::SQLite3 ${TAGLIB_LIBRARIES})  
+add_executable(runTests test.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp)
+target_link_libraries(runTests ${GTEST_LIBRARIES} pthread CURL::libcurl yaml-cpp SQLite::SQLite3 ${TAGLIB_LIBRARIES})
