@@ -25,9 +25,6 @@ int main(int argc, char *argv[])
 {
     FileData fileData{};
     std::string configPath = "./config.yaml"; // Default config file path
-    extern char **environ;
-    for (char **env = environ; *env; ++env)
-        std::cout << *env << std::endl;
 
     // Parse command-line arguments
     for (int i = 1; i < argc; ++i)

@@ -1,6 +1,5 @@
-#include "fileProcessor.h"
-#include "curlHelper.h"
-#include "FileData.h"
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 #include <fstream>
 #include <iostream>
 #include <chrono>
@@ -10,8 +9,12 @@
 #include <memory>
 #include <string>
 #include <array>
-#include <taglib/fileref.h>
-#include <taglib/mpegfile.h>
+#include <stdexcept>
+#include <vector>
+#include <algorithm>
+#include "fileProcessor.h"
+#include "curlHelper.h"
+#include "FileData.h"
 
 void find_and_move_mp3_without_txt(const std::string &directoryToMonitor) {
     std::vector<std::string> mp3_files;
@@ -36,31 +39,28 @@ void find_and_move_mp3_without_txt(const std::string &directoryToMonitor) {
     }
 }
 
-std::string getMP3Duration(const std::string& filePath) {
-    std::ostringstream oss;
-    std::array<char, 128> buffer;
-
-    std::string cmd = "/usr/bin/ffprobe -i \"" + filePath + "\" -show_entries format=duration -v quiet -of csv=\"p=0\" 2>&1";
-    std::cout << "Debug: Executing command: " << cmd << std::endl;
-
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
-    if (!pipe) {
-        throw std::runtime_error("popen() failed!");
+double getMP3Duration(const std::string& file_path) {
+    // Open the file
+    AVFormatContext *format_ctx = nullptr;
+    if (avformat_open_input(&format_ctx, file_path.c_str(), nullptr, nullptr) != 0) {
+        std::cerr << "Could not open file: " << file_path << std::endl;
+        return -1.0;
     }
 
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        oss << buffer.data();
+    // Retrieve stream information
+    if (avformat_find_stream_info(format_ctx, nullptr) < 0) {
+        std::cerr << "Could not find stream information." << std::endl;
+        return -1.0;
     }
 
-    std::string result = oss.str();
-    std::cout << "Debug: Command output: " << result << std::endl;
+    // Get the duration
+    int64_t duration = format_ctx->duration;
+    double duration_in_seconds = static_cast<double>(duration) / AV_TIME_BASE;
 
-    if (result.empty()) {
-        std::cout << "ffprobe failed to get the duration." << std::endl;
-        return "Unknown";
-    }
+    // Close the file
+    avformat_close_input(&format_ctx);
 
-    return result;
+    return duration_in_seconds;
 }
 
 int generateUnixTimestamp(const std::string& date, const std::string& time) {
