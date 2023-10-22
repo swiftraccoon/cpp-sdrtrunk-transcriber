@@ -9,10 +9,10 @@
 #include <thread>
 
 // Third-Party Library Headers
-#include <curlHelper.h>
 #include <yaml-cpp/yaml.h>
 
 // Project-Specific Headers
+#include "curlHelper.h"
 #include "DatabaseManager.h"
 #include "FileData.h"
 #include "fileProcessor.h"
