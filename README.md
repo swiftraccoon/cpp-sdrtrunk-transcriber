@@ -1,3 +1,5 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber/badge)](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber)
+
 (Python version: https://github.com/swiftraccoon/sdrtrunk-transcriber)
 
 (released Node.JS website for displaying data: https://github.com/swiftraccoon/sdrtrunk-transcribed-web)
