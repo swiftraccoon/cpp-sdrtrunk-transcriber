@@ -1,22 +1,28 @@
 # Configuration for C++ SDRTrunk Transcriber
-# config.yaml
 
 # Directory to monitor for new MP3 files
-DirectoryToMonitor: "/path/to/monitor"
+DirectoryToMonitor: "/home/YOUR_USER/github/cpp-sdrtrunk-transcriber"
 
 # Number of seconds to wait before looping
 LoopWaitSeconds: 5
 
 # OpenAI API Key for transcription
-OPENAI_API_KEY: "your_OPENAI_API_KEY_here"
+OPENAI_API_KEY: "YOUR API KEY"
+
+# We utilize the SDRTrunk playlist XML to 
+XML_PATH: "/home/YOUR_USER/SDRTrunk/playlist/default.xml"
 
 # sqlite3 database for saving file information and transcriptions
-DATABASE_PATH: "/home/YOUR_USER/SDRTrunk/recordings.db"
+DATABASE_PATH: "/home/YOUR_USER/github/cpp-sdrtrunk-transcriber/recordings.db"
 
+# JSON object files for tensigns
+TENSIGN_FILE: "/home/YOUR_USER/SDRTrunk/TENSIGN.json"
+NCSHP_TENSIGN_FILE: "/home/YOUR_USER/SDRTrunk/NCSHP_TENCODE.json"
 
-# These are not used yet, but will be in the future in complicated-monitor-dir
-XML_PATH: "/home/YOUR_USER/SDRTrunk/playlist/default.xml"
-TEN_SIGN_FILE: "/home/YOUR_USER/SDRTrunk/Some_Co_NC_TENSIGN.txt"
-CALLSIGNS_PATH: "/home/YOUR_USER/SDRTrunk/callsigns.db"
-NCSHP_TEN_SIGN_FILE: "/home/YOUR_USER/SDRTrunk/NCSHP_TENCODE.txt"
-SIGNALS_FILE: "/home/YOUR_USER/SDRTrunk/NCSHP_SIGNALS.txt"
+# JSON object files for callsigns
+CALLSIGNS_FILE: "/home/YOUR_USER/SDRTrunk/unique_recent_callsigns.json"
+NCSHP_CALLSIGNS_FILE: ""
+
+# JSON object files for signals
+SIGNALS_FILE: ""
+NCSHP_SIGNALS_FILE: "/home/YOUR_USER/SDRTrunk/NCSHP_SIGNALS.json"
