@@ -29,9 +29,11 @@ std::string generateV2Transcription(const std::string& transcription, int talkgr
     ConfigSingleton& config = ConfigSingleton::getInstance();
     const auto tensignFile = talkgroupID == TALKGROUP_1 || talkgroupID == TALKGROUP_2 || talkgroupID == TALKGROUP_3 ? config.getNCSHP_TensignFile() : config.getTensignFile();
     const auto callsignFile = talkgroupID == TALKGROUP_1 || talkgroupID == TALKGROUP_2 || talkgroupID == TALKGROUP_3 ? config.getNCSHP_CallsignFile() : config.getCallsignFile();
+    const auto signalsFile = talkgroupID == TALKGROUP_1 || talkgroupID == TALKGROUP_2 || talkgroupID == TALKGROUP_3 ? config.getNCSHP_SignalFile() : config.getSignalFile();
 
     const auto tensigns = readMappingFile(tensignFile);
     const auto callsigns = readMappingFile(callsignFile);
+    const auto signals = readMappingFile(signalsFile);
 
     const auto actualTranscription = extractActualTranscription(transcription);
     if (actualTranscription.empty()) {
@@ -44,6 +46,7 @@ std::string generateV2Transcription(const std::string& transcription, int talkgr
     orderedJsonStr << "\"" << std::to_string(radioID) << "\":\"" << actualTranscription << "\"";
 
     insertMappings(orderedJsonStr, actualTranscription, tensigns);
+    insertMappings(orderedJsonStr, actualTranscription, signals);
     insertMappings(orderedJsonStr, actualTranscription, callsigns);
 
     orderedJsonStr << "}";
@@ -81,7 +84,9 @@ void insertMappings(std::stringstream& orderedJsonStr, const std::string& actual
     std::unordered_set<std::string> insertedKeys;
 
     for (const auto& [key, value] : mappings) {
-        if (actualTranscription.find(key) != std::string::npos && insertedKeys.find(key) == insertedKeys.end()) {
+        std::regex keyRegex("\\b" + key + "\\b", std::regex::icase); // Use word boundaries and case-insensitive matching
+        std::smatch match;
+        if (std::regex_search(actualTranscription, match, keyRegex) && insertedKeys.find(key) == insertedKeys.end()) {
             orderedJsonStr << ",\"" << key << "\":\"" << value << "\"";
             insertedKeys.insert(key);
         }
