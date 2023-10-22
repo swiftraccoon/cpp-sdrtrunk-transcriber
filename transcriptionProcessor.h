@@ -11,7 +11,10 @@
 // Function to read a mapping file and return an unordered_map
 std::unordered_map<std::string, std::string> readMappingFile(const std::string& filePath);
 
-// Function to generate the updated transcription (v2transcription)
+std::string extractActualTranscription(const std::string& transcription);
+
+void insertMappings(std::stringstream& orderedJsonStr, const std::string& actualTranscription, const std::unordered_map<std::string, std::string>& mappings);
+
 std::string generateV2Transcription(const std::string& transcription, int talkgroupID, int radioID);
 
 #endif // TRANSCRIPTION_PROCESSOR_H
