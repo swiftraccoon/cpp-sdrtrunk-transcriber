@@ -1,5 +1,8 @@
-#include "DatabaseManager.h"
+// Standard Library Headers
 #include <iostream>
+
+// Project-Specific Headers
+#include "DatabaseManager.h"
 
 DatabaseManager::DatabaseManager(const std::string& dbPath) {
     int rc = sqlite3_open(dbPath.c_str(), &db);

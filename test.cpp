@@ -1,6 +1,10 @@
+// Third-Party Library Headers
 #include <gtest/gtest.h>
-#include "curlHelper.h"
 #include <yaml-cpp/yaml.h>
+
+// Project-Specific Headers
+#include "curlHelper.h"
+
 
 std::string OPENAI_API_KEY;
 

@@ -1,9 +1,13 @@
-#include "curlHelper.h"
-#include <stdexcept>
+// Standard Library Headers
 #include <chrono>
 #include <deque>
 #include <regex>
+#include <stdexcept>
 #include <thread>
+
+// Project-Specific Headers
+#include "curlHelper.h"
+
 
 const std::string API_URL = "https://api.openai.com/v1/audio/transcriptions";
 const int MAX_RETRIES = 6;
@@ -96,7 +100,7 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
         auto sleep_duration = RATE_LIMIT_WINDOW - (now - requestTimestamps.front());
         std::this_thread::sleep_for(sleep_duration);
     }
-    
+
     for (int retryCount = 0; retryCount < MAX_RETRIES; ++retryCount)
     {
         CURL *curl = curl_easy_init();

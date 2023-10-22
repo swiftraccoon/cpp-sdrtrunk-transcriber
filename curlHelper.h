@@ -1,6 +1,11 @@
 #pragma once
+
+// Standard Library Headers
 #include <string>
+
+// Third-Party Library Headers
 #include <curl/curl.h>
+
 
 // Callback function to write the CURL response to a string
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);

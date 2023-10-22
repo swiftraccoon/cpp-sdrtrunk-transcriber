@@ -1,18 +1,22 @@
+// Standard Library Headers
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstdio>
+#include <ctime>
 #include <fstream>
 #include <iostream>
-#include <chrono>
-#include <ctime>
-#include <sstream>
-#include <cstdio>
 #include <memory>
-#include <string>
-#include <array>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 #include <vector>
-#include <algorithm>
-#include "fileProcessor.h"
+
+// Project-Specific Headers
 #include "curlHelper.h"
 #include "FileData.h"
+#include "fileProcessor.h"
+
 
 void find_and_move_mp3_without_txt(const std::string &directoryToMonitor) {
     std::vector<std::string> mp3_files;

@@ -1,17 +1,21 @@
-#include <iostream>
-#include <cstdlib>
-#include <stdexcept>
-#include <filesystem>
-#include <thread>
+// Standard Library Headers
 #include <chrono>
+#include <cstdlib>
+#include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <optional>
-#include "curlHelper.h"
-#include "DatabaseManager.h"
-#include "fileProcessor.h"
-#include "FileData.h"
-#include <yaml-cpp/yaml.h>
 #include <stdexcept>
+#include <thread>
+
+// Third-Party Library Headers
+#include <curlHelper.h>
+#include <yaml-cpp/yaml.h>
+
+// Project-Specific Headers
+#include "DatabaseManager.h"
+#include "FileData.h"
+#include "fileProcessor.h"
 
 
 constexpr const char* DEFAULT_CONFIG_PATH = "./config.yaml";
