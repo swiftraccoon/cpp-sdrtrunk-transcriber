@@ -50,8 +50,8 @@ std::string getMP3Duration(const std::string& mp3FilePath) {
     // Execute the ffprobe command and capture the output
     FILE* pipe = popen(cmd.str().c_str(), "r");
     if (!pipe) {
-        std::cerr << "Error executing ffprobe." << std::endl;
-        return "Unknown"; // Return -1 to indicate an error
+        std::cerr << "fileProcessor.cpp Error executing ffprobe." << std::endl;
+        return "fileProcessor.cpp Unknown"; // Return -1 to indicate an error
     }
 
     char buffer[128];
@@ -82,7 +82,22 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
     FileData fileData;
     std::string file_path = path.string();  // Changed from filePath to path
     std::string filename = path.filename().string();  // Changed from filePath to path
-
+    
+    std::string durationStr = getMP3Duration(file_path);
+    try {
+        float duration = std::stof(durationStr);
+        if (duration < 9.0) {
+            std::cerr << "fileProcessor.cpp File duration is less than 9 seconds. Deleting..." << std::endl;
+            std::filesystem::remove(file_path);  // Delete the file
+            throw std::runtime_error("fileProcessor.cpp File duration less than 9 seconds");  // Throw an exception
+        }
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "fileProcessor.cpp Invalid argument: " << e.what() << std::endl;
+            // Handle the error as appropriate for your application
+        } catch (const std::out_of_range& e) {
+            std::cerr << "fileProcessor.cpp Out of range: " << e.what() << std::endl;
+            // Handle the error as appropriate for your application
+        }
 
     try
     {
@@ -133,7 +148,7 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
     }
     catch (const std::exception &e)
     {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "fileProcessor.cpp Error: " << e.what() << std::endl;
         return FileData();
     }
 }

@@ -8,6 +8,7 @@ struct FileData {
     std::string time;
     int unixtime;
     int talkgroupID;
+    std::string talkgroupName;
     int radioID;
     std::string duration;
     std::string filename;

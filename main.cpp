@@ -115,11 +115,19 @@ void processDirectory(const std::string& directoryToMonitor, const YAML::Node& c
             {
                 std::cout << "main.cpp Processing directory: " << directoryToMonitor << std::endl;
                 std::cout << "main.cpp Checking file: " << entry.path() << std::endl;
-                fileData = processFile(entry.path(), directoryToMonitor, OPENAI_API_KEY);
-
+                try {
+                    fileData = processFile(entry.path(), directoryToMonitor, OPENAI_API_KEY);
+                } catch (const std::runtime_error& e) {
+                    std::cerr << "main.cpp Skipping file: " << e.what() << std::endl;
+                    continue;  // Move on to the next file
+                }
                 
-                // TODO: Consider batch database operations?
-                dbManager.insertRecording(fileData.date, fileData.time, fileData.unixtime, fileData.talkgroupID, fileData.radioID, fileData.duration, fileData.filename, fileData.filepath, fileData.transcription, fileData.v2transcription);
+                try {
+                    fileData.talkgroupName = "TODO";
+                    dbManager.insertRecording(fileData.date, fileData.time, fileData.unixtime, fileData.talkgroupID, fileData.talkgroupName, fileData.radioID, fileData.duration, fileData.filename, fileData.filepath, fileData.transcription, fileData.v2transcription);
+                } catch (const std::exception& e) {
+                    std::cerr << "main.cpp Database insertion failed: " << e.what() << std::endl;
+                }
             }
         }
     }

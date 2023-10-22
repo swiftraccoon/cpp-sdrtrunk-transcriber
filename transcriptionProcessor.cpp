@@ -37,7 +37,7 @@ std::string generateV2Transcription(const std::string& transcription, int talkgr
 
     const auto actualTranscription = extractActualTranscription(transcription);
     if (actualTranscription.empty()) {
-        std::cerr << "Could not extract actual transcription from JSON-like string." << std::endl;
+        std::cerr << "transcriptionProcessor.cpp Could not extract actual transcription from JSON-like string." << std::endl;
         return {};
     }
 
@@ -58,7 +58,7 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string& 
     std::unordered_map<std::string, std::string> mapping;
     std::ifstream file(filePath);
     if (!file.is_open()) {
-        std::cerr << "Could not open file: " << filePath << std::endl;
+        std::cerr << "transcriptionProcessor.cpp Could not open file: " << filePath << std::endl;
         return mapping;
     }
 
@@ -69,7 +69,7 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string& 
             mapping[key] = value.is_string() ? value.get<std::string>() : std::to_string(value.get<int>());
         }
     } catch (const nlohmann::json::exception& e) {
-        std::cerr << "JSON Error: " << e.what() << std::endl;
+        std::cerr << "transcriptionProcessor.cpp JSON Error: " << e.what() << std::endl;
     }
     return mapping;
 }
