@@ -1,6 +1,8 @@
 // Standard Library Headers
 #include <chrono>
 #include <deque>
+#include <filesystem>
+#include <fstream>
 #include <regex>
 #include <stdexcept>
 #include <thread>
@@ -47,9 +49,9 @@ void setupCurlPostFields(CURL *curl, curl_mime *&mime, const std::string &file_p
     curl_mime_name(part, "model");
     curl_mime_data(part, "whisper-1", CURL_ZERO_TERMINATED);
 
-    part = curl_mime_addpart(mime);
-    curl_mime_name(part, "prompt");
-    curl_mime_data(part, "Transcribe the radio dispatch audio. The speaker is usually a dispatcher, police officer, or EMS responder. There are often callsigns, ten-codes, and addresses said.", CURL_ZERO_TERMINATED);
+    // part = curl_mime_addpart(mime);
+    // curl_mime_name(part, "prompt");
+    // curl_mime_data(part, "Transcribe the radio dispatch audio. The speaker is usually a dispatcher, police officer, or EMS responder. There are often callsigns, ten-codes, and addresses said.", CURL_ZERO_TERMINATED);
 
     part = curl_mime_addpart(mime);
     curl_mime_name(part, "response_format");
@@ -82,6 +84,16 @@ std::string makeCurlRequest(CURL *curl, curl_mime *mime)
 // Transcribe audio using CURL
 std::string curl_transcribe_audio(const std::string &file_path, const std::string& OPENAI_API_KEY)
 {
+    // Check if the file exists
+    if (!std::filesystem::exists(file_path)) {
+        throw std::runtime_error("curlHelper.cpp File does not exist: " + file_path);
+    }
+    // Check if the file is readable
+    std::ifstream file(file_path);
+    if (!file.good()) {
+        throw std::runtime_error("curlHelper.cpp Cannot read file: " + file_path);
+    }
+    file.close();
     std::deque<std::chrono::steady_clock::time_point> errorTimestamps;
     std::regex errorPattern("Bad gateway|Internal server error");
     // Rate-limiting logic

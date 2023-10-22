@@ -131,4 +131,4 @@ void processDirectory(const std::string& directoryToMonitor, const YAML::Node& c
             }
         }
     }
-}  
+}

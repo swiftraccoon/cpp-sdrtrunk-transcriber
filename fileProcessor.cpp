@@ -108,6 +108,15 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
         size_t end = filename.find("_FROM_");
         std::string talkgroupID = filename.substr(start, end - start);
         std::cout << "fileProcessor.cpp talkgroupID: " << talkgroupID << std::endl;
+        // Check if talkgroupID starts with 'P_'
+        if (talkgroupID.substr(0, 2) == "P_") {
+            talkgroupID = talkgroupID.substr(2);  // Remove the 'P_' prefix
+        }
+        // Check if talkgroupID contains square brackets and extract the ID before it
+        size_t bracketPos = talkgroupID.find("[");
+        if (bracketPos != std::string::npos) {
+            talkgroupID = talkgroupID.substr(0, bracketPos);
+        }
         // Extract variables from filename
         std::string date = filename.substr(0, 8);
         std::string time = filename.substr(9, 6);
@@ -115,8 +124,24 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
         size_t endRadioID = filename.find(".mp3");
         std::string radioID = filename.substr(startRadioID, endRadioID - startRadioID);
         std::cout << "fileProcessor.cpp radioID: " << radioID << std::endl;
-        fileData.talkgroupID = std::stoi(talkgroupID);
-        fileData.radioID = std::stoi(radioID);
+        try {
+            fileData.talkgroupID = std::stoi(talkgroupID);
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "fileProcessor.cpp Invalid argument for talkgroupID: " << e.what() << std::endl;
+            // Handle the error as appropriate for your application
+        } catch (const std::out_of_range& e) {
+            std::cerr << "fileProcessor.cpp Out of range for talkgroupID: " << e.what() << std::endl;
+            // Handle the error as appropriate for your application
+        }
+        try {
+            fileData.radioID = std::stoi(radioID);
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "fileProcessor.cpp Invalid argument for radioID: " << e.what() << std::endl;
+            // Handle the error as appropriate for your application
+        } catch (const std::out_of_range& e) {
+            std::cerr << "fileProcessor.cpp Out of range for radioID: " << e.what() << std::endl;
+            // Handle the error as appropriate for your application
+        }
         fileData.v2transcription = generateV2Transcription(transcription, fileData.talkgroupID, fileData.radioID);
 
         // Save transcription to TXT file
