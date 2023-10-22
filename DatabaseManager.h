@@ -1,5 +1,9 @@
 #pragma once
+
+// Standard Library Headers
 #include <string>
+
+// Project-Specific Headers
 #include <sqlite3.h>
 
 class DatabaseManager {
