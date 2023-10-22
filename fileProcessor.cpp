@@ -99,6 +99,7 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
             std::filesystem::create_directory(subDir);
         }
         fileData.duration = getMP3Duration(file_path);
+        
         // Move MP3 and TXT files to subdirectory
         std::filesystem::rename(file_path, subDir / filename);
         std::filesystem::rename(txt_filename, subDir / txt_filename);

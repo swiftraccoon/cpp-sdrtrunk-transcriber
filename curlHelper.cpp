@@ -1,7 +1,17 @@
 #include "curlHelper.h"
 #include <stdexcept>
+#include <chrono>
+#include <deque>
+#include <regex>
+#include <thread>
 
 const std::string API_URL = "https://api.openai.com/v1/audio/transcriptions";
+const int MAX_RETRIES = 6;
+const std::chrono::minutes ERROR_WINDOW(5);
+const int MAX_REQUESTS_PER_MINUTE = 50;
+const std::chrono::minutes RATE_LIMIT_WINDOW(1);
+
+std::deque<std::chrono::steady_clock::time_point> requestTimestamps;
 
 // Callback function to write the CURL response to a string
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
@@ -68,25 +78,71 @@ std::string makeCurlRequest(CURL *curl, curl_mime *mime)
 // Transcribe audio using CURL
 std::string curl_transcribe_audio(const std::string &file_path, const std::string& OPENAI_API_KEY)
 {
-    CURL *curl = curl_easy_init();
-    if (!curl)
+    std::deque<std::chrono::steady_clock::time_point> errorTimestamps;
+    std::regex errorPattern("Bad gateway|Internal server error");
+    // Rate-limiting logic
+    auto now = std::chrono::steady_clock::now();
+
+    // Remove timestamps outside the 1-minute window
+    while (!requestTimestamps.empty() && (now - requestTimestamps.front() > RATE_LIMIT_WINDOW))
     {
-        throw std::runtime_error("CURL initialization failed");
+        requestTimestamps.pop_front();
     }
 
-    struct curl_slist *headers = NULL;
-    setupCurlHeaders(curl, headers, OPENAI_API_KEY);
+    // Check if we've exceeded the rate limit
+    if (requestTimestamps.size() >= MAX_REQUESTS_PER_MINUTE)
+    {
+        // Calculate sleep duration: time until the oldest request in the window "expires"
+        auto sleep_duration = RATE_LIMIT_WINDOW - (now - requestTimestamps.front());
+        std::this_thread::sleep_for(sleep_duration);
+    }
+    
+    for (int retryCount = 0; retryCount < MAX_RETRIES; ++retryCount)
+    {
+        CURL *curl = curl_easy_init();
+        if (!curl)
+        {
+            throw std::runtime_error("CURL initialization failed");
+        }
 
-    curl_mime *mime;
-    setupCurlPostFields(curl, mime, file_path);
+        struct curl_slist *headers = NULL;
+        setupCurlHeaders(curl, headers, OPENAI_API_KEY);
 
-    curl_easy_setopt(curl, CURLOPT_URL, API_URL.c_str());
-    curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
+        curl_mime *mime;
+        setupCurlPostFields(curl, mime, file_path);
 
-    std::string response = makeCurlRequest(curl, mime);
+        curl_easy_setopt(curl, CURLOPT_URL, API_URL.c_str());
+        curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
 
-    curl_easy_cleanup(curl);
-    curl_mime_free(mime);
+        std::string response = makeCurlRequest(curl, mime);
 
-    return response;
+        curl_easy_cleanup(curl);
+        curl_mime_free(mime);
+
+        if (!std::regex_search(response, errorPattern))
+        {
+            return response; // Success, return the response
+        }
+
+        // Log the error timestamp
+        auto now = std::chrono::steady_clock::now();
+        errorTimestamps.push_back(now);
+
+        // Remove timestamps outside the 5-minute window
+        while (!errorTimestamps.empty() && (now - errorTimestamps.front() > ERROR_WINDOW))
+        {
+            errorTimestamps.pop_front();
+        }
+
+        // Check if we've exceeded the error limit within the window
+        if (errorTimestamps.size() >= MAX_RETRIES)
+        {
+            throw std::runtime_error("Exceeded maximum number of retries within time window");
+        }
+
+        // Optional: Add a delay before retrying
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
+
+    throw std::runtime_error("Exceeded maximum number of retries - check if OpenAI API is down - https://status.openai.com/");
 }
