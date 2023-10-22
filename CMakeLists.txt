@@ -21,7 +21,7 @@ add_subdirectory(yaml-cpp)
 
 # Main Executable Configuration
 # Define the executable and its source files
-add_executable(sdrTrunkTranscriber main.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp)
+add_executable(sdrTrunkTranscriber main.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp ConfigSingleton.cpp transcriptionProcessor.cpp)
 
 # Specify include directories for the main executable
 target_include_directories(sdrTrunkTranscriber PUBLIC
@@ -46,8 +46,11 @@ find_package(GTest REQUIRED)
 # Include Google Test headers
 include_directories(${GTEST_INCLUDE_DIRS})
 
+#
+include_directories(json/)
+
 # Define the test executable and its source files
-add_executable(runTests test.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp)
+add_executable(runTests test.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp ConfigSingleton.cpp transcriptionProcessor.cpp)
 
 # Link required libraries to the test executable
 target_link_libraries(runTests 

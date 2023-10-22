@@ -21,8 +21,8 @@ void DatabaseManager::createTable() {
     sqlite3_exec(db, sql, 0, 0, 0);
 }
 
-void DatabaseManager::insertRecording(const std::string& date, const std::string& time, int unixtime, int talkgroupID, int radioID, const std::string& duration, const std::string& filename, const std::string& filepath, const std::string& transcription) {
-    std::string insertSQL = "INSERT INTO recordings (date, time, unixtime, talkgroup_id, radio_id, duration, filename, filepath, transcription) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+void DatabaseManager::insertRecording(const std::string& date, const std::string& time, int unixtime, int talkgroupID, int radioID, const std::string& duration, const std::string& filename, const std::string& filepath, const std::string& transcription, const std::string& v2transcription) {
+    std::string insertSQL = "INSERT INTO recordings (date, time, unixtime, talkgroup_id, radio_id, duration, filename, filepath, transcription, v2transcription) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     sqlite3_stmt* stmt;
     sqlite3_prepare_v2(db, insertSQL.c_str(), -1, &stmt, 0);
 
@@ -36,6 +36,7 @@ void DatabaseManager::insertRecording(const std::string& date, const std::string
     sqlite3_bind_text(stmt, 7, filename.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 8, filepath.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 9, transcription.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 10, v2transcription.c_str(), -1, SQLITE_STATIC);
 
     // Execute the statement
     sqlite3_step(stmt);

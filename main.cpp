@@ -12,6 +12,7 @@
 #include <yaml-cpp/yaml.h>
 
 // Project-Specific Headers
+#include "ConfigSingleton.h"
 #include "curlHelper.h"
 #include "DatabaseManager.h"
 #include "FileData.h"
@@ -41,6 +42,7 @@ void displayHelp()
 
 int main(int argc, char *argv[])
 {
+    std::cout << "main.cpp started." << std::endl;
     FileData fileData{};
     std::string configPath = DEFAULT_CONFIG_PATH;
 
@@ -71,7 +73,10 @@ int main(int argc, char *argv[])
     }
     YAML::Node config = configOpt.value();
 
-    DatabaseManager dbManager(config["DATABASE_PATH"].as<std::string>());
+    ConfigSingleton::getInstance().initialize(config);
+
+    std::string databasePath = ConfigSingleton::getInstance().getDatabasePath();
+    DatabaseManager dbManager(databasePath);
     dbManager.createTable();
 
     // Cache frequently accessed config values
@@ -83,12 +88,13 @@ int main(int argc, char *argv[])
         processDirectory(directoryToMonitor, config, dbManager);
         std::this_thread::sleep_for(std::chrono::seconds(loopWaitSeconds));
     }
+    std::cout << "main.cpp ending." << std::endl;
     return 0;
 }
 
 std::optional<YAML::Node> loadConfig(const std::string& configPath) {
     if (!std::filesystem::exists(configPath)) {
-        std::cerr << "Configuration file not found.\n";
+        std::cerr << "main.cpp Configuration file not found.\n";
         return std::nullopt;
     }
     // TODO: add more error handling here?
@@ -97,7 +103,7 @@ std::optional<YAML::Node> loadConfig(const std::string& configPath) {
 
 void processDirectory(const std::string& directoryToMonitor, const YAML::Node& config, DatabaseManager& dbManager) {
     FileData fileData;
-    std::string OPENAI_API_KEY = config["OPENAI_API_KEY"].as<std::string>();
+    std::string OPENAI_API_KEY = ConfigSingleton::getInstance().getOpenAIAPIKey();
 
     find_and_move_mp3_without_txt(directoryToMonitor);
 
@@ -107,10 +113,13 @@ void processDirectory(const std::string& directoryToMonitor, const YAML::Node& c
         {
             if (entry.path().extension() == MP3_EXTENSION)
             {
+                std::cout << "main.cpp Processing directory: " << directoryToMonitor << std::endl;
+                std::cout << "main.cpp Checking file: " << entry.path() << std::endl;
                 fileData = processFile(entry.path(), directoryToMonitor, OPENAI_API_KEY);
+
                 
                 // TODO: Consider batch database operations?
-                dbManager.insertRecording(fileData.date, fileData.time, fileData.unixtime, fileData.talkgroupID, fileData.radioID, fileData.duration, fileData.filename, fileData.filepath, fileData.transcription);
+                dbManager.insertRecording(fileData.date, fileData.time, fileData.unixtime, fileData.talkgroupID, fileData.radioID, fileData.duration, fileData.filename, fileData.filepath, fileData.transcription, fileData.v2transcription);
             }
         }
     }

@@ -13,4 +13,5 @@ struct FileData {
     std::string filename;
     std::string filepath;
     std::string transcription;
+    std::string v2transcription;
 };

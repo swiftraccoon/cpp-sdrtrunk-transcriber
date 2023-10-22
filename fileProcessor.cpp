@@ -13,9 +13,11 @@
 #include <vector>
 
 // Project-Specific Headers
+#include "ConfigSingleton.h"
 #include "curlHelper.h"
 #include "FileData.h"
 #include "fileProcessor.h"
+#include "transcriptionProcessor.h"
 
 
 void find_and_move_mp3_without_txt(const std::string &directoryToMonitor) {
@@ -81,20 +83,32 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
     std::string file_path = path.string();  // Changed from filePath to path
     std::string filename = path.filename().string();  // Changed from filePath to path
 
+
     try
     {
         std::string transcription = curl_transcribe_audio(file_path, OPENAI_API_KEY);
-
-        // Save transcription to TXT file
-        std::string txt_filename = filename.substr(0, filename.size() - 4) + ".txt";
-        std::ofstream txt_file(txt_filename);
-        txt_file << transcription;
-        txt_file.close();
-
+        std::cout << "fileProcessor.cpp transcription: " << transcription << std::endl;
         // Extract talkgroup ID
         size_t start = filename.find("TO_") + 3;
         size_t end = filename.find("_FROM_");
         std::string talkgroupID = filename.substr(start, end - start);
+        std::cout << "fileProcessor.cpp talkgroupID: " << talkgroupID << std::endl;
+        // Extract variables from filename
+        std::string date = filename.substr(0, 8);
+        std::string time = filename.substr(9, 6);
+        size_t startRadioID = filename.find("_FROM_") + 6;
+        size_t endRadioID = filename.find(".mp3");
+        std::string radioID = filename.substr(startRadioID, endRadioID - startRadioID);
+        std::cout << "fileProcessor.cpp radioID: " << radioID << std::endl;
+        fileData.talkgroupID = std::stoi(talkgroupID);
+        fileData.radioID = std::stoi(radioID);
+        fileData.v2transcription = generateV2Transcription(transcription, fileData.talkgroupID, fileData.radioID);
+
+        // Save transcription to TXT file
+        std::string txt_filename = filename.substr(0, filename.size() - 4) + ".txt";
+        std::ofstream txt_file(txt_filename);
+        txt_file << fileData.v2transcription;
+        txt_file.close();
 
         // Create subdirectory if it doesn't exist
         std::filesystem::path subDir = std::filesystem::path(directoryToMonitor) / talkgroupID;
@@ -107,23 +121,14 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
         // Move MP3 and TXT files to subdirectory
         std::filesystem::rename(file_path, subDir / filename);
         std::filesystem::rename(txt_filename, subDir / txt_filename);
-
-        // Extract variables from filename
-        std::string date = filename.substr(0, 8);
-        std::string time = filename.substr(9, 6);
-        size_t startRadioID = filename.find("_FROM_") + 6;
-        size_t endRadioID = filename.find(".mp3");
-        std::string radioID = filename.substr(startRadioID, endRadioID - startRadioID);
         
         fileData.date = date;
         fileData.time = time;
         fileData.unixtime = generateUnixTimestamp(fileData.date, fileData.time);
-        fileData.talkgroupID = std::stoi(talkgroupID);
-        fileData.radioID = std::stoi(radioID);
         fileData.filename = filename;
         fileData.filepath = file_path;
         fileData.transcription = transcription;
-
+        
         return fileData;
     }
     catch (const std::exception &e)
