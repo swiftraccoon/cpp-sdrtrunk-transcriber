@@ -1,3 +1,5 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber/badge)](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber)
+
 (Python version: https://github.com/swiftraccoon/sdrtrunk-transcriber)
 
 (released Node.JS website for displaying data: https://github.com/swiftraccoon/sdrtrunk-transcribed-web)
@@ -7,17 +9,19 @@
 This project is designed to monitor a directory for SDRTrunk MP3 files, categorize them into a subdirectory based on talkgroup ID, and create transcription files. It utilizes OpenAI's API for audio transcription and SQLite3 for database management.
 ## Features
 
-    Monitors a specified directory for new MP3 files.
-    Categorizes and processes MP3 files.
-    Transcribes audio using OpenAI's API.
-    Stores metadata and transcriptions in a SQLite3 database.
+    Monitors a directory for new MP3 files
+    Transcribes audio using OpenAI's API
+    Manages transcriptions and metadata in an SQLite3 database
+    Provides a systemd service for automated running
+    Unit tests for key functionalities
 
 ## Dependencies
 
-    CURL
+    CMake
     SQLite3
+    CURL
     yaml-cpp
-    ffprobe
+    Google Test (for unit tests)
 
 ## Installation
 
@@ -44,6 +48,13 @@ Run the compiled binary with the following options:
 
     -c <config_path>: Path to the configuration file (Optional, default is './config.yaml').
     -h, --help: Display help message.
+
+## System Service
+
+There is a provided BASH script to show an example template for setting up the binary as a Linux system service.
+
+    Edit `install-systemd-service.sh`
+    `sudo ./install-systemd-service.sh`
 
 ## Contributing
 
