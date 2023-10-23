@@ -87,7 +87,7 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
     try {
         float duration = std::stof(durationStr);
         if (duration < 9.0) {
-            std::cerr << "fileProcessor.cpp File duration is less than 9 seconds. Deleting..." << std::endl;
+            //22 std::cerr << "fileProcessor.cpp File duration is less than 9 seconds. Deleting..." << std::endl;
             std::filesystem::remove(file_path);  // Delete the file
             throw std::runtime_error("fileProcessor.cpp File duration less than 9 seconds");  // Throw an exception
         }
@@ -102,12 +102,12 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
     try
     {
         std::string transcription = curl_transcribe_audio(file_path, OPENAI_API_KEY);
-        std::cout << "fileProcessor.cpp transcription: " << transcription << std::endl;
+        //22 std::cout << "fileProcessor.cpp transcription: " << transcription << std::endl;
         // Extract talkgroup ID
         size_t start = filename.find("TO_") + 3;
         size_t end = filename.find("_FROM_");
         std::string talkgroupID = filename.substr(start, end - start);
-        std::cout << "fileProcessor.cpp talkgroupID: " << talkgroupID << std::endl;
+        //22 std::cout << "fileProcessor.cpp talkgroupID: " << talkgroupID << std::endl;
         // Check if talkgroupID starts with 'P_'
         if (talkgroupID.substr(0, 2) == "P_") {
             talkgroupID = talkgroupID.substr(2);  // Remove the 'P_' prefix
@@ -123,7 +123,7 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
         size_t startRadioID = filename.find("_FROM_") + 6;
         size_t endRadioID = filename.find(".mp3");
         std::string radioID = filename.substr(startRadioID, endRadioID - startRadioID);
-        std::cout << "fileProcessor.cpp radioID: " << radioID << std::endl;
+        //22 std::cout << "fileProcessor.cpp radioID: " << radioID << std::endl;
         try {
             fileData.talkgroupID = std::stoi(talkgroupID);
         } catch (const std::invalid_argument& e) {
@@ -168,7 +168,6 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
         fileData.filename = filename;
         fileData.filepath = file_path;
         fileData.transcription = transcription;
-        
         return fileData;
     }
     catch (const std::exception &e)

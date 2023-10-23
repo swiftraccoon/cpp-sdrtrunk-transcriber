@@ -113,12 +113,12 @@ void processDirectory(const std::string& directoryToMonitor, const YAML::Node& c
         {
             if (entry.path().extension() == MP3_EXTENSION)
             {
-                std::cout << "main.cpp Processing directory: " << directoryToMonitor << std::endl;
-                std::cout << "main.cpp Checking file: " << entry.path() << std::endl;
+                //22 std::cout << "main.cpp Processing directory: " << directoryToMonitor << std::endl;
+                //22 std::cout << "main.cpp Checking file: " << entry.path() << std::endl;
                 try {
                     fileData = processFile(entry.path(), directoryToMonitor, OPENAI_API_KEY);
                 } catch (const std::runtime_error& e) {
-                    std::cerr << "main.cpp Skipping file: " << e.what() << std::endl;
+                    //22 std::cerr << "main.cpp Skipping file: " << e.what() << std::endl;
                     continue;  // Move on to the next file
                 }
                 

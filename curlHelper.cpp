@@ -95,7 +95,7 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
     }
     file.close();
     std::deque<std::chrono::steady_clock::time_point> errorTimestamps;
-    std::regex errorPattern("Bad gateway|Internal server error");
+    std::regex errorPattern("Bad gateway|Internal server error|Invalid file format.");
     // Rate-limiting logic
     auto now = std::chrono::steady_clock::now();
 

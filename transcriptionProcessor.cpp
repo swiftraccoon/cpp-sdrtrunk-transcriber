@@ -58,13 +58,14 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string& 
     std::unordered_map<std::string, std::string> mapping;
     std::ifstream file(filePath);
     if (!file.is_open()) {
-        std::cerr << "transcriptionProcessor.cpp Could not open file: " << filePath << std::endl;
+        //22 std::cerr << "transcriptionProcessor.cpp Could not open file: " << filePath << std::endl;
         return mapping;
     }
 
     try {
         nlohmann::json j;
         file >> j;
+        std::cerr << "transcriptionProcessor.cpp JSON: " << j << std::endl;
         for (const auto& [key, value] : j.items()) {
             mapping[key] = value.is_string() ? value.get<std::string>() : std::to_string(value.get<int>());
         }
