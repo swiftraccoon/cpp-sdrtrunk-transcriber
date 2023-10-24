@@ -4,15 +4,20 @@
 DirectoryToMonitor: "/home/YOUR_USER/github/cpp-sdrtrunk-transcriber"
 
 # Number of seconds to wait before looping
-LoopWaitSeconds: 5
+LoopWaitSeconds: 60
 
 # OpenAI API Key for transcription
 OPENAI_API_KEY: "YOUR API KEY"
 
-# We utilize the SDRTrunk playlist XML to 
+# TODO:
+# utilize the SDRTrunk playlist XML to convert 
+# talkgroup ID to names
+# radio ID to names 
 XML_PATH: "/home/YOUR_USER/SDRTrunk/playlist/default.xml"
 
 # sqlite3 database for saving file information and transcriptions
+# we will be initializing this database
+# schema in DatabaseManager
 DATABASE_PATH: "/home/YOUR_USER/github/cpp-sdrtrunk-transcriber/recordings.db"
 
 # JSON object files for tensigns
@@ -21,8 +26,8 @@ NCSHP_TENSIGN_FILE: "/home/YOUR_USER/SDRTrunk/NCSHP_TENCODE.json"
 
 # JSON object files for callsigns
 CALLSIGNS_FILE: "/home/YOUR_USER/SDRTrunk/unique_recent_callsigns.json"
-NCSHP_CALLSIGNS_FILE: ""
+NCSHP_CALLSIGNS_FILE: "/home/YOUR_USER/SDRTrunk/unique_recent_callsigns.json"
 
 # JSON object files for signals
-SIGNALS_FILE: ""
+SIGNALS_FILE: "/home/YOUR_USER/SDRTrunk/signals.json"
 NCSHP_SIGNALS_FILE: "/home/YOUR_USER/SDRTrunk/NCSHP_SIGNALS.json"
