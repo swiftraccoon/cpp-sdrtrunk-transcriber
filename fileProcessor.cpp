@@ -94,7 +94,7 @@ std::string getMP3Duration(const std::string &mp3FilePath)
 int generateUnixTimestamp(const std::string &date, const std::string &time)
 {
     std::tm tm = {};
-    std::string dateTime = date + time; // Combine date and time
+    std::string dateTime = date + time;
     std::istringstream ss(dateTime);
     ss >> std::get_time(&tm, "%Y%m%d%H%M%S"); // Parse the combined string
     auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
@@ -104,12 +104,11 @@ int generateUnixTimestamp(const std::string &date, const std::string &time)
 FileData processFile(const std::filesystem::path &path, const std::string &directoryToMonitor, const std::string &OPENAI_API_KEY)
 {
     FileData fileData;
-    std::string file_path = path.string();           // Changed from filePath to path
-    std::string filename = path.filename().string(); // Changed from filePath to path
-
+    std::string file_path = path.string();
+    std::string filename = path.filename().string();
     if (isFileBeingWrittenTo(file_path) || isFileLocked(file_path))
     {
-        // Skip this file or log a message
+        // Skipping file
         return FileData();
     }
 
@@ -127,12 +126,10 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
     catch (const std::invalid_argument &e)
     {
         std::cerr << "fileProcessor.cpp Invalid argument: " << e.what() << std::endl;
-        // Handle the error as appropriate for your application
     }
     catch (const std::out_of_range &e)
     {
         std::cerr << "fileProcessor.cpp Out of range: " << e.what() << std::endl;
-        // Handle the error as appropriate for your application
     }
 
     try
@@ -169,12 +166,10 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
         catch (const std::invalid_argument &e)
         {
             std::cerr << "fileProcessor.cpp Invalid argument for talkgroupID: " << e.what() << std::endl;
-            // Handle the error as appropriate for your application
         }
         catch (const std::out_of_range &e)
         {
             std::cerr << "fileProcessor.cpp Out of range for talkgroupID: " << e.what() << std::endl;
-            // Handle the error as appropriate for your application
         }
         try
         {
@@ -183,12 +178,10 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
         catch (const std::invalid_argument &e)
         {
             std::cerr << "fileProcessor.cpp Invalid argument for radioID: " << e.what() << std::endl;
-            // Handle the error as appropriate for your application
         }
         catch (const std::out_of_range &e)
         {
             std::cerr << "fileProcessor.cpp Out of range for radioID: " << e.what() << std::endl;
-            // Handle the error as appropriate for your application
         }
         fileData.v2transcription = generateV2Transcription(transcription, fileData.talkgroupID, fileData.radioID);
 
