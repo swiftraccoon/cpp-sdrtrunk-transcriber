@@ -35,6 +35,56 @@ void displayHelp()
     std::cout << "\n";
 }
 
+std::optional<YAML::Node> loadConfig(const std::string &configPath)
+{
+    if (!std::filesystem::exists(configPath))
+    {
+        std::cerr << "main.cpp Configuration file not found.\n";
+        return std::nullopt;
+    }
+    // TODO: add more error handling here?
+    return YAML::LoadFile(configPath);
+}
+
+void processDirectory(const std::string &directoryToMonitor, const YAML::Node &config, DatabaseManager &dbManager)
+{
+    FileData fileData;
+    std::string OPENAI_API_KEY = ConfigSingleton::getInstance().getOpenAIAPIKey();
+
+    find_and_move_mp3_without_txt(directoryToMonitor);
+
+    for (const auto &entry : std::filesystem::directory_iterator(directoryToMonitor))
+    {
+        if (entry.path().parent_path() == std::filesystem::path(directoryToMonitor))
+        {
+            if (entry.path().extension() == MP3_EXTENSION)
+            {
+                // 22 std::cout << "main.cpp Processing directory: " << directoryToMonitor << std::endl;
+                // 22 std::cout << "main.cpp Checking file: " << entry.path() << std::endl;
+                try
+                {
+                    fileData = processFile(entry.path(), directoryToMonitor, OPENAI_API_KEY);
+                }
+                catch (const std::runtime_error &e)
+                {
+                    // 22 std::cerr << "main.cpp Skipping file: " << e.what() << std::endl;
+                    continue; // Move on to the next file
+                }
+
+                try
+                {
+                    fileData.talkgroupName = "TODO";
+                    dbManager.insertRecording(fileData.date, fileData.time, fileData.unixtime, fileData.talkgroupID, fileData.talkgroupName, fileData.radioID, fileData.duration, fileData.filename, fileData.filepath, fileData.transcription, fileData.v2transcription);
+                }
+                catch (const std::exception &e)
+                {
+                    std::cerr << "main.cpp Database insertion failed: " << e.what() << std::endl;
+                }
+            }
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     std::cout << "main.cpp started." << std::endl;
@@ -86,54 +136,4 @@ int main(int argc, char *argv[])
     }
     std::cout << "main.cpp ending." << std::endl;
     return 0;
-}
-
-std::optional<YAML::Node> loadConfig(const std::string &configPath)
-{
-    if (!std::filesystem::exists(configPath))
-    {
-        std::cerr << "main.cpp Configuration file not found.\n";
-        return std::nullopt;
-    }
-    // TODO: add more error handling here?
-    return YAML::LoadFile(configPath);
-}
-
-void processDirectory(const std::string &directoryToMonitor, const YAML::Node &config, DatabaseManager &dbManager)
-{
-    FileData fileData;
-    std::string OPENAI_API_KEY = ConfigSingleton::getInstance().getOpenAIAPIKey();
-
-    find_and_move_mp3_without_txt(directoryToMonitor);
-
-    for (const auto &entry : std::filesystem::directory_iterator(directoryToMonitor))
-    {
-        if (entry.path().parent_path() == std::filesystem::path(directoryToMonitor))
-        {
-            if (entry.path().extension() == MP3_EXTENSION)
-            {
-                // 22 std::cout << "main.cpp Processing directory: " << directoryToMonitor << std::endl;
-                // 22 std::cout << "main.cpp Checking file: " << entry.path() << std::endl;
-                try
-                {
-                    fileData = processFile(entry.path(), directoryToMonitor, OPENAI_API_KEY);
-                }
-                catch (const std::runtime_error &e)
-                {
-                    // 22 std::cerr << "main.cpp Skipping file: " << e.what() << std::endl;
-                    continue; // Move on to the next file
-                }
-
-                try
-                {
-                    fileData.talkgroupName = "TODO";
-                    dbManager.insertRecording(fileData.date, fileData.time, fileData.unixtime, fileData.talkgroupID, fileData.talkgroupName, fileData.radioID, fileData.duration, fileData.filename, fileData.filepath, fileData.transcription, fileData.v2transcription);
-                }
-                catch (const std::exception &e)
-                {
-                    std::cerr << "main.cpp Database insertion failed: " << e.what() << std::endl;
-                }
-            }
-        }
-    }
 }
