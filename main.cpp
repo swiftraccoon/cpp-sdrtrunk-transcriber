@@ -10,6 +10,7 @@
 
 // Third-Party Library Headers
 #include <yaml-cpp/yaml.h>
+#include "CLI11/include/CLI/CLI.hpp"
 
 // Project-Specific Headers
 #include "ConfigSingleton.h"
@@ -89,28 +90,11 @@ int main(int argc, char *argv[])
 {
     std::cout << "main.cpp started." << std::endl;
     FileData fileData{};
-    std::string configPath = DEFAULT_CONFIG_PATH;
 
-    // Parse command-line arguments
-    for (int i = 1; i < argc; ++i)
-    {
-        std::string arg = argv[i];
-        if (arg == "-c" && i + 1 < argc)
-        {
-            configPath = argv[++i]; // Increment i to skip the next argument
-        }
-        else if (arg == "--help" || arg == "-h")
-        {
-            displayHelp();
-            return 0;
-        }
-        else
-        {
-            std::cerr << "Unknown option: " << arg << std::endl;
-            displayHelp();
-            return 1;
-        }
-    }
+    CLI::App app{"transcribe and process SDRTrunk mp3 recordings"};
+    std::string configPath = DEFAULT_CONFIG_PATH;
+    app.add_option("-c,--config", configPath, "Configuration path (Optional, default is './config.yaml')");
+    CLI11_PARSE(app, argc, argv);
 
     auto configOpt = loadConfig(configPath);
     if (!configOpt.has_value())
