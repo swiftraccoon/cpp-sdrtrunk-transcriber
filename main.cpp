@@ -103,6 +103,14 @@ int main(int argc, char *argv[])
     }
     YAML::Node config = configOpt.value();
 
+    // Debugging: Print out all config.yaml variables
+    std::cout << "=======================================" << std::endl;
+    std::cout << "Config variables:" << std::endl;
+    for (YAML::const_iterator it = config.begin(); it != config.end(); ++it) {
+        std::cout << it->first.as<std::string>() << ": " << it->second.as<std::string>() << std::endl;
+    }
+    std::cout << "=======================================" << std::endl;
+
     ConfigSingleton::getInstance().initialize(config);
 
     std::string databasePath = ConfigSingleton::getInstance().getDatabasePath();
