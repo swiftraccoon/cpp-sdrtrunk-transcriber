@@ -7,11 +7,12 @@
 // Third-Party Library Headers
 #include <yaml-cpp/yaml.h>
 
-class ConfigSingleton {
+class ConfigSingleton
+{
 public:
-    static ConfigSingleton& getInstance();
-    void initialize(const YAML::Node& config);
-    
+    static ConfigSingleton &getInstance();
+    void initialize(const YAML::Node &config);
+
     std::string getOpenAIAPIKey() const;
     std::string getTensignFile() const;
     std::string getCallsignFile() const;
@@ -26,8 +27,8 @@ public:
 private:
     ConfigSingleton() = default;
     ~ConfigSingleton() = default;
-    ConfigSingleton(const ConfigSingleton&) = delete;
-    ConfigSingleton& operator=(const ConfigSingleton&) = delete;
+    ConfigSingleton(const ConfigSingleton &) = delete;
+    ConfigSingleton &operator=(const ConfigSingleton &) = delete;
 
     std::string openaiAPIKey;
     std::string tensignFile;

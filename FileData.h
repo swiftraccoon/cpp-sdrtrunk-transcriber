@@ -3,7 +3,8 @@
 // Standard Library Headers
 #include <string>
 
-struct FileData {
+struct FileData
+{
     std::string date;
     std::string time;
     int unixtime;

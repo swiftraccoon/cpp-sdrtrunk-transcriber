@@ -10,7 +10,6 @@
 // Project-Specific Headers
 #include "curlHelper.h"
 
-
 const std::string API_URL = "https://api.openai.com/v1/audio/transcriptions";
 const int MAX_RETRIES = 6;
 const std::chrono::minutes ERROR_WINDOW(5);
@@ -27,7 +26,7 @@ size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 }
 
 // Setup CURL headers
-void setupCurlHeaders(CURL *curl, struct curl_slist *&headers, const std::string& OPENAI_API_KEY)
+void setupCurlHeaders(CURL *curl, struct curl_slist *&headers, const std::string &OPENAI_API_KEY)
 {
     headers = curl_slist_append(headers, ("Authorization: Bearer " + std::string(OPENAI_API_KEY)).c_str());
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
@@ -82,15 +81,17 @@ std::string makeCurlRequest(CURL *curl, curl_mime *mime)
 }
 
 // Transcribe audio using CURL
-std::string curl_transcribe_audio(const std::string &file_path, const std::string& OPENAI_API_KEY)
+std::string curl_transcribe_audio(const std::string &file_path, const std::string &OPENAI_API_KEY)
 {
     // Check if the file exists
-    if (!std::filesystem::exists(file_path)) {
+    if (!std::filesystem::exists(file_path))
+    {
         throw std::runtime_error("curlHelper.cpp File does not exist: " + file_path);
     }
     // Check if the file is readable
     std::ifstream file(file_path);
-    if (!file.good()) {
+    if (!file.good())
+    {
         throw std::runtime_error("curlHelper.cpp Cannot read file: " + file_path);
     }
     file.close();

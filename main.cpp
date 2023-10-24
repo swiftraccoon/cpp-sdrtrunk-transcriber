@@ -18,16 +18,12 @@
 #include "FileData.h"
 #include "fileProcessor.h"
 
+constexpr const char *DEFAULT_CONFIG_PATH = "./config.yaml";
+constexpr const char *MP3_EXTENSION = ".mp3";
 
-constexpr const char* DEFAULT_CONFIG_PATH = "./config.yaml";
-constexpr const char* MP3_EXTENSION = ".mp3";
+std::optional<YAML::Node> loadConfig(const std::string &configPath);
 
-
-std::optional<YAML::Node> loadConfig(const std::string& configPath);
-
-
-void processDirectory(const std::string& directoryToMonitor, const YAML::Node& config, DatabaseManager& dbManager);
-
+void processDirectory(const std::string &directoryToMonitor, const YAML::Node &config, DatabaseManager &dbManager);
 
 void displayHelp()
 {
@@ -38,7 +34,6 @@ void displayHelp()
     std::cout << "\n";
     std::cout << "\n";
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -68,7 +63,8 @@ int main(int argc, char *argv[])
     }
 
     auto configOpt = loadConfig(configPath);
-    if (!configOpt.has_value()) {
+    if (!configOpt.has_value())
+    {
         return 1;
     }
     YAML::Node config = configOpt.value();
@@ -92,8 +88,10 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-std::optional<YAML::Node> loadConfig(const std::string& configPath) {
-    if (!std::filesystem::exists(configPath)) {
+std::optional<YAML::Node> loadConfig(const std::string &configPath)
+{
+    if (!std::filesystem::exists(configPath))
+    {
         std::cerr << "main.cpp Configuration file not found.\n";
         return std::nullopt;
     }
@@ -101,7 +99,8 @@ std::optional<YAML::Node> loadConfig(const std::string& configPath) {
     return YAML::LoadFile(configPath);
 }
 
-void processDirectory(const std::string& directoryToMonitor, const YAML::Node& config, DatabaseManager& dbManager) {
+void processDirectory(const std::string &directoryToMonitor, const YAML::Node &config, DatabaseManager &dbManager)
+{
     FileData fileData;
     std::string OPENAI_API_KEY = ConfigSingleton::getInstance().getOpenAIAPIKey();
 
@@ -113,19 +112,25 @@ void processDirectory(const std::string& directoryToMonitor, const YAML::Node& c
         {
             if (entry.path().extension() == MP3_EXTENSION)
             {
-                //22 std::cout << "main.cpp Processing directory: " << directoryToMonitor << std::endl;
-                //22 std::cout << "main.cpp Checking file: " << entry.path() << std::endl;
-                try {
+                // 22 std::cout << "main.cpp Processing directory: " << directoryToMonitor << std::endl;
+                // 22 std::cout << "main.cpp Checking file: " << entry.path() << std::endl;
+                try
+                {
                     fileData = processFile(entry.path(), directoryToMonitor, OPENAI_API_KEY);
-                } catch (const std::runtime_error& e) {
-                    //22 std::cerr << "main.cpp Skipping file: " << e.what() << std::endl;
-                    continue;  // Move on to the next file
                 }
-                
-                try {
+                catch (const std::runtime_error &e)
+                {
+                    // 22 std::cerr << "main.cpp Skipping file: " << e.what() << std::endl;
+                    continue; // Move on to the next file
+                }
+
+                try
+                {
                     fileData.talkgroupName = "TODO";
                     dbManager.insertRecording(fileData.date, fileData.time, fileData.unixtime, fileData.talkgroupID, fileData.talkgroupName, fileData.radioID, fileData.duration, fileData.filename, fileData.filepath, fileData.transcription, fileData.v2transcription);
-                } catch (const std::exception& e) {
+                }
+                catch (const std::exception &e)
+                {
                     std::cerr << "main.cpp Database insertion failed: " << e.what() << std::endl;
                 }
             }

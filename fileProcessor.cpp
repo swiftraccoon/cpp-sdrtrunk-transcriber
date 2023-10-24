@@ -20,56 +20,66 @@
 #include "fileProcessor.h"
 #include "transcriptionProcessor.h"
 
-
-bool isFileBeingWrittenTo(const std::string& filePath) {
+bool isFileBeingWrittenTo(const std::string &filePath)
+{
     std::filesystem::path path(filePath);
     auto size1 = std::filesystem::file_size(path);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));  // Wait for 500 ms
+    std::this_thread::sleep_for(std::chrono::milliseconds(500)); // Wait for 500 ms
     auto size2 = std::filesystem::file_size(path);
     return size1 != size2;
 }
 
-bool isFileLocked(const std::string& filePath) {
+bool isFileLocked(const std::string &filePath)
+{
     return std::filesystem::exists(filePath + ".lock");
 }
 
-void find_and_move_mp3_without_txt(const std::string &directoryToMonitor) {
+void find_and_move_mp3_without_txt(const std::string &directoryToMonitor)
+{
     std::vector<std::string> mp3_files;
     std::vector<std::string> txt_files;
 
-    for (const auto& file : std::filesystem::directory_iterator(directoryToMonitor)) {
-        if (file.path().extension() == ".mp3") {
+    for (const auto &file : std::filesystem::directory_iterator(directoryToMonitor))
+    {
+        if (file.path().extension() == ".mp3")
+        {
             mp3_files.push_back(file.path().filename().string());
         }
-        if (file.path().extension() == ".txt") {
+        if (file.path().extension() == ".txt")
+        {
             txt_files.push_back(file.path().stem().string());
         }
     }
 
-    for (const auto& mp3 : mp3_files) {
-        std::string mp3_base = mp3.substr(0, mp3.size() - 4);  // Remove ".mp3" extension
-        if (std::find(txt_files.begin(), txt_files.end(), mp3_base) == txt_files.end()) {
+    for (const auto &mp3 : mp3_files)
+    {
+        std::string mp3_base = mp3.substr(0, mp3.size() - 4); // Remove ".mp3" extension
+        if (std::find(txt_files.begin(), txt_files.end(), mp3_base) == txt_files.end())
+        {
             std::filesystem::path src_path = std::filesystem::path(directoryToMonitor) / mp3;
             std::filesystem::path dest_path = std::filesystem::path(directoryToMonitor) / mp3;
-            std::filesystem::rename(src_path, dest_path);  // Move the file
+            std::filesystem::rename(src_path, dest_path); // Move the file
         }
     }
 }
 
-std::string getMP3Duration(const std::string& mp3FilePath) {
+std::string getMP3Duration(const std::string &mp3FilePath)
+{
     std::stringstream cmd;
     cmd << "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " << mp3FilePath;
 
     // Execute the ffprobe command and capture the output
-    FILE* pipe = popen(cmd.str().c_str(), "r");
-    if (!pipe) {
+    FILE *pipe = popen(cmd.str().c_str(), "r");
+    if (!pipe)
+    {
         std::cerr << "fileProcessor.cpp Error executing ffprobe." << std::endl;
         return "fileProcessor.cpp Unknown"; // Return -1 to indicate an error
     }
 
     char buffer[128];
     std::string durationStr;
-    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL)
+    {
         durationStr += buffer;
     }
 
@@ -81,58 +91,68 @@ std::string getMP3Duration(const std::string& mp3FilePath) {
     return durationStr;
 }
 
-
-int generateUnixTimestamp(const std::string& date, const std::string& time) {
+int generateUnixTimestamp(const std::string &date, const std::string &time)
+{
     std::tm tm = {};
-    std::string dateTime = date + time;  // Combine date and time
+    std::string dateTime = date + time; // Combine date and time
     std::istringstream ss(dateTime);
-    ss >> std::get_time(&tm, "%Y%m%d%H%M%S");  // Parse the combined string
+    ss >> std::get_time(&tm, "%Y%m%d%H%M%S"); // Parse the combined string
     auto tp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
     return std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch()).count();
 }
 
-FileData processFile(const std::filesystem::path& path, const std::string& directoryToMonitor, const std::string& OPENAI_API_KEY) {
+FileData processFile(const std::filesystem::path &path, const std::string &directoryToMonitor, const std::string &OPENAI_API_KEY)
+{
     FileData fileData;
-    std::string file_path = path.string();  // Changed from filePath to path
-    std::string filename = path.filename().string();  // Changed from filePath to path
+    std::string file_path = path.string();           // Changed from filePath to path
+    std::string filename = path.filename().string(); // Changed from filePath to path
 
-    if (isFileBeingWrittenTo(file_path) || isFileLocked(file_path)) {
+    if (isFileBeingWrittenTo(file_path) || isFileLocked(file_path))
+    {
         // Skip this file or log a message
         return FileData();
     }
 
     std::string durationStr = getMP3Duration(file_path);
-    try {
+    try
+    {
         float duration = std::stof(durationStr);
-        if (duration < 9.0) {
-            //22 std::cerr << "fileProcessor.cpp File duration is less than 9 seconds. Deleting..." << std::endl;
-            std::filesystem::remove(file_path);  // Delete the file
-            throw std::runtime_error("fileProcessor.cpp File duration less than 9 seconds");  // Throw an exception
+        if (duration < 9.0)
+        {
+            // 22 std::cerr << "fileProcessor.cpp File duration is less than 9 seconds. Deleting..." << std::endl;
+            std::filesystem::remove(file_path);                                              // Delete the file
+            throw std::runtime_error("fileProcessor.cpp File duration less than 9 seconds"); // Throw an exception
         }
-        } catch (const std::invalid_argument& e) {
-            std::cerr << "fileProcessor.cpp Invalid argument: " << e.what() << std::endl;
-            // Handle the error as appropriate for your application
-        } catch (const std::out_of_range& e) {
-            std::cerr << "fileProcessor.cpp Out of range: " << e.what() << std::endl;
-            // Handle the error as appropriate for your application
-        }
+    }
+    catch (const std::invalid_argument &e)
+    {
+        std::cerr << "fileProcessor.cpp Invalid argument: " << e.what() << std::endl;
+        // Handle the error as appropriate for your application
+    }
+    catch (const std::out_of_range &e)
+    {
+        std::cerr << "fileProcessor.cpp Out of range: " << e.what() << std::endl;
+        // Handle the error as appropriate for your application
+    }
 
     try
     {
         std::string transcription = curl_transcribe_audio(file_path, OPENAI_API_KEY);
-        //22 std::cout << "fileProcessor.cpp transcription: " << transcription << std::endl;
-        // Extract talkgroup ID
+        // 22 std::cout << "fileProcessor.cpp transcription: " << transcription << std::endl;
+        //  Extract talkgroup ID
         size_t start = filename.find("TO_") + 3;
         size_t end = filename.find("_FROM_");
         std::string talkgroupID = filename.substr(start, end - start);
-        //22 std::cout << "fileProcessor.cpp talkgroupID: " << talkgroupID << std::endl;
-        // Check if talkgroupID starts with 'P_'
-        if (talkgroupID.substr(0, 2) == "P_") {
-            talkgroupID = talkgroupID.substr(2);  // Remove the 'P_' prefix
+        // 22 std::cout << "fileProcessor.cpp talkgroupID: " << talkgroupID << std::endl;
+        //  Check if talkgroupID starts with 'P_'
+        if (talkgroupID.substr(0, 2) == "P_")
+        {
+            talkgroupID = talkgroupID.substr(2); // Remove the 'P_' prefix
         }
         // Check if talkgroupID contains square brackets and extract the ID before it
         size_t bracketPos = talkgroupID.find("[");
-        if (bracketPos != std::string::npos) {
+        if (bracketPos != std::string::npos)
+        {
             talkgroupID = talkgroupID.substr(0, bracketPos);
         }
         // Extract variables from filename
@@ -141,22 +161,32 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
         size_t startRadioID = filename.find("_FROM_") + 6;
         size_t endRadioID = filename.find(".mp3");
         std::string radioID = filename.substr(startRadioID, endRadioID - startRadioID);
-        //22 std::cout << "fileProcessor.cpp radioID: " << radioID << std::endl;
-        try {
+        // 22 std::cout << "fileProcessor.cpp radioID: " << radioID << std::endl;
+        try
+        {
             fileData.talkgroupID = std::stoi(talkgroupID);
-        } catch (const std::invalid_argument& e) {
+        }
+        catch (const std::invalid_argument &e)
+        {
             std::cerr << "fileProcessor.cpp Invalid argument for talkgroupID: " << e.what() << std::endl;
             // Handle the error as appropriate for your application
-        } catch (const std::out_of_range& e) {
+        }
+        catch (const std::out_of_range &e)
+        {
             std::cerr << "fileProcessor.cpp Out of range for talkgroupID: " << e.what() << std::endl;
             // Handle the error as appropriate for your application
         }
-        try {
+        try
+        {
             fileData.radioID = std::stoi(radioID);
-        } catch (const std::invalid_argument& e) {
+        }
+        catch (const std::invalid_argument &e)
+        {
             std::cerr << "fileProcessor.cpp Invalid argument for radioID: " << e.what() << std::endl;
             // Handle the error as appropriate for your application
-        } catch (const std::out_of_range& e) {
+        }
+        catch (const std::out_of_range &e)
+        {
             std::cerr << "fileProcessor.cpp Out of range for radioID: " << e.what() << std::endl;
             // Handle the error as appropriate for your application
         }
@@ -175,11 +205,11 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
             std::filesystem::create_directory(subDir);
         }
         fileData.duration = getMP3Duration(file_path);
-        
+
         // Move MP3 and TXT files to subdirectory
         std::filesystem::rename(file_path, subDir / filename);
         std::filesystem::rename(txt_filename, subDir / txt_filename);
-        
+
         fileData.date = date;
         fileData.time = time;
         fileData.unixtime = generateUnixTimestamp(fileData.date, fileData.time);
