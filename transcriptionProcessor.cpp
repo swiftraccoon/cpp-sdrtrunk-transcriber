@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cctype>
 #include <unordered_set>
+#include <functional>
 
 // Third-Party Library Headers
 #include "json/single_include/nlohmann/json.hpp"
@@ -17,19 +18,26 @@
 // Project-Specific Headers
 #include "ConfigSingleton.h"
 
-constexpr int TALKGROUP_1 = 52198;
-constexpr int TALKGROUP_2 = 52199;
-constexpr int TALKGROUP_3 = 52201;
-
 std::unordered_map<std::string, std::string> readMappingFile(const std::string& filePath);
 std::string extractActualTranscription(const std::string& transcription);
 void insertMappings(std::stringstream& orderedJsonStr, const std::string& actualTranscription, const std::unordered_map<std::string, std::string>& mappings);
 
+std::unordered_set<int> specialTalkgroupIDs = {52198, 52199, 52201};
+
+std::string getAppropriateFile(int talkgroupID, std::function<std::string()> getNCSHPFile, std::function<std::string()> getDefaultFile) {
+    if (specialTalkgroupIDs.find(talkgroupID) != specialTalkgroupIDs.end()) {
+        return getNCSHPFile();
+    }
+    return getDefaultFile();
+}
+
 std::string generateV2Transcription(const std::string& transcription, int talkgroupID, int radioID) {
     ConfigSingleton& config = ConfigSingleton::getInstance();
-    const auto tensignFile = talkgroupID == TALKGROUP_1 || talkgroupID == TALKGROUP_2 || talkgroupID == TALKGROUP_3 ? config.getNCSHP_TensignFile() : config.getTensignFile();
-    const auto callsignFile = talkgroupID == TALKGROUP_1 || talkgroupID == TALKGROUP_2 || talkgroupID == TALKGROUP_3 ? config.getNCSHP_CallsignFile() : config.getCallsignFile();
-    const auto signalsFile = talkgroupID == TALKGROUP_1 || talkgroupID == TALKGROUP_2 || talkgroupID == TALKGROUP_3 ? config.getNCSHP_SignalFile() : config.getSignalFile();
+    
+    const auto tensignFile = getAppropriateFile(talkgroupID, [&]() { return config.getNCSHP_TensignFile(); }, [&]() { return config.getTensignFile(); });
+    const auto callsignFile = getAppropriateFile(talkgroupID, [&]() { return config.getNCSHP_CallsignFile(); }, [&]() { return config.getCallsignFile(); });
+    const auto signalsFile = getAppropriateFile(talkgroupID, [&]() { return config.getNCSHP_SignalFile(); }, [&]() { return config.getSignalFile(); });
+
 
     const auto tensigns = readMappingFile(tensignFile);
     const auto callsigns = readMappingFile(callsignFile);
@@ -65,7 +73,7 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string& 
     try {
         nlohmann::json j;
         file >> j;
-        std::cerr << "transcriptionProcessor.cpp JSON: " << j << std::endl;
+        //22 std::cerr << "transcriptionProcessor.cpp JSON: " << j << std::endl;
         for (const auto& [key, value] : j.items()) {
             mapping[key] = value.is_string() ? value.get<std::string>() : std::to_string(value.get<int>());
         }
@@ -76,6 +84,7 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string& 
 }
 
 std::string extractActualTranscription(const std::string& transcription) {
+    std::cerr << "transcriptionProcessor.cpp Received transcription string: " << transcription << std::endl;
     static const std::regex text_regex("\"text\":\"([^\"]+)\"");
     std::smatch match;
     return std::regex_search(transcription, match, text_regex) && match.size() > 1 ? match.str(1) : "";

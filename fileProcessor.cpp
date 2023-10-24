@@ -9,6 +9,7 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <thread>
 #include <string>
 #include <vector>
 
@@ -19,6 +20,18 @@
 #include "fileProcessor.h"
 #include "transcriptionProcessor.h"
 
+
+bool isFileBeingWrittenTo(const std::string& filePath) {
+    std::filesystem::path path(filePath);
+    auto size1 = std::filesystem::file_size(path);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));  // Wait for 500 ms
+    auto size2 = std::filesystem::file_size(path);
+    return size1 != size2;
+}
+
+bool isFileLocked(const std::string& filePath) {
+    return std::filesystem::exists(filePath + ".lock");
+}
 
 void find_and_move_mp3_without_txt(const std::string &directoryToMonitor) {
     std::vector<std::string> mp3_files;
@@ -82,7 +95,12 @@ FileData processFile(const std::filesystem::path& path, const std::string& direc
     FileData fileData;
     std::string file_path = path.string();  // Changed from filePath to path
     std::string filename = path.filename().string();  // Changed from filePath to path
-    
+
+    if (isFileBeingWrittenTo(file_path) || isFileLocked(file_path)) {
+        // Skip this file or log a message
+        return FileData();
+    }
+
     std::string durationStr = getMP3Duration(file_path);
     try {
         float duration = std::stof(durationStr);
