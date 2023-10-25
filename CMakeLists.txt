@@ -53,7 +53,7 @@ include_directories(${GTEST_INCLUDE_DIRS})
 include_directories(json/)
 
 # Define the test executable and its source files
-add_executable(runTests test.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp ConfigSingleton.cpp transcriptionProcessor.cpp)
+add_executable(runTests test.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp ConfigSingleton.cpp transcriptionProcessor.cpp debugUtils.cpp)
 
 # Link required libraries to the test executable
 target_link_libraries(runTests 
