@@ -106,17 +106,41 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
             {
                 mapping[key] = std::to_string(value.get<int>());
             }
+            else if (value.is_array())
+            {
+                std::cerr << "[" << getCurrentTime() << "] "
+                          << "transcriptionProcessor.cpp Array type detected for key: " << key << std::endl;
+                // Handle array type if needed
+            }
+            else if (value.is_object())
+            {
+                std::cerr << "[" << getCurrentTime() << "] "
+                          << "transcriptionProcessor.cpp Object type detected for key: " << key << std::endl;
+                // Handle object type if needed
+            }
+            else if (value.is_boolean())
+            {
+                std::cerr << "[" << getCurrentTime() << "] "
+                          << "transcriptionProcessor.cpp Boolean type detected for key: " << key << std::endl;
+                // Handle boolean type if needed
+            }
+            else if (value.is_null())
+            {
+                std::cerr << "[" << getCurrentTime() << "] "
+                          << "transcriptionProcessor.cpp Null type detected for key: " << key << std::endl;
+                // Handle null type if needed
+            }
             else
             {
                 std::cerr << "[" << getCurrentTime() << "] "
-                          << "L112 transcriptionProcessor.cpp Unexpected type for key: " << key << std::endl;
+                          << "transcriptionProcessor.cpp Unexpected type for key: " << key << std::endl;
             }
         }
     }
     catch (const nlohmann::json::exception &e)
     {
         std::cerr << "[" << getCurrentTime() << "] "
-                  << "L119 transcriptionProcessor.cpp JSON Error: " << e.what() << std::endl;
+                  << "transcriptionProcessor.cpp JSON Error: " << e.what() << std::endl;
     }
     return mapping;
 }
