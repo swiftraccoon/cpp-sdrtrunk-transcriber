@@ -12,6 +12,9 @@
 #include <thread>
 #include <string>
 #include <vector>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 // Project-Specific Headers
 #include "ConfigSingleton.h"
@@ -63,37 +66,48 @@ void find_and_move_mp3_without_txt(const std::string &directoryToMonitor)
     }
 }
 
-std::string getMP3Duration(const std::string &mp3FilePath)
-{
-    // Define the command and arguments separately
-    const char *cmd = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1";
-    char fullCmd[512];
-
-    // Safely format the full command string
-    snprintf(fullCmd, sizeof(fullCmd), "%s %s", cmd, mp3FilePath.c_str());
-
-    // Execute the command
-    FILE *pipe = popen(fullCmd, "r");
-
-    if (!pipe)
-    {
-        std::cerr << "fileProcessor.cpp Error executing ffprobe." << std::endl;
-        return "fileProcessor.cpp Unknown"; // Return -1 to indicate an error
+std::string getMP3Duration(const std::string &mp3FilePath) {
+    int pipefd[2];
+    if (pipe(pipefd) == -1) {
+        perror("pipe");
+        exit(EXIT_FAILURE);
     }
 
-    char buffer[128];
-    std::string durationStr;
-    while (fgets(buffer, sizeof(buffer), pipe) != NULL)
-    {
-        durationStr += buffer;
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
     }
 
-    pclose(pipe);
+    if (pid == 0) {  // Child process
+        close(pipefd[0]);  // Close read end
+        dup2(pipefd[1], STDOUT_FILENO);  // Redirect stdout to write end of pipe
+        close(pipefd[1]);  // Close write end (now that it's duplicated)
 
-    // Remove any trailing newline characters
-    durationStr.erase(durationStr.find_last_not_of("\n\r") + 1);
+        execlp("ffprobe", "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", mp3FilePath.c_str(), NULL);
+        perror("execlp");
+        exit(EXIT_FAILURE);
+    } else {  // Parent process
+        close(pipefd[1]);  // Close write end
 
-    return durationStr;
+        char buffer[128];
+        std::string durationStr;
+        ssize_t bytesRead;
+        while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0) {
+            buffer[bytesRead] = '\0';
+            durationStr += buffer;
+        }
+
+        close(pipefd[0]);  // Close read end
+
+        int status;
+        waitpid(pid, &status, 0);  // Wait for child to exit
+
+        // Remove any trailing newline characters
+        durationStr.erase(durationStr.find_last_not_of("\n\r") + 1);
+
+        return durationStr;
+    }
 }
 
 int generateUnixTimestamp(const std::string &date, const std::string &time)
