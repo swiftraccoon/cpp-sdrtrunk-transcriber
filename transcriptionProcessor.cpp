@@ -94,8 +94,8 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
     {
         nlohmann::json j;
         file >> j;
-        std::cerr << "[" << getCurrentTime() << "] "
-                  << "L98 transcriptionProcessor.cpp JSON: " << j << std::endl;
+        //22 std::cerr << "[" << getCurrentTime() << "] "
+        //22           << "L98 transcriptionProcessor.cpp JSON: " << j << std::endl;
         for (const auto &[key, value] : j.items())
         {
             if (value.is_string())
