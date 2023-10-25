@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 #include <deque>
+#include <functional>
 #include <algorithm>
 #include <cctype>
 #include <unordered_set>
@@ -17,6 +18,7 @@
 
 // Project-Specific Headers
 #include "ConfigSingleton.h"
+#include "debugUtils.h"
 
 std::unordered_map<std::string, std::string> readMappingFile(const std::string &filePath);
 std::string extractActualTranscription(const std::string &transcription);
@@ -60,7 +62,8 @@ std::string generateV2Transcription(const std::string &transcription, int talkgr
     const auto actualTranscription = extractActualTranscription(transcription);
     if (actualTranscription.empty())
     {
-        std::cerr << "transcriptionProcessor.cpp Could not extract actual transcription from JSON-like string." << std::endl;
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "L66 transcriptionProcessor.cpp Could not extract actual transcription from JSON-like string." << std::endl;
         return {};
     }
 
@@ -83,7 +86,7 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
     std::ifstream file(filePath);
     if (!file.is_open())
     {
-        // 22 std::cerr << "transcriptionProcessor.cpp Could not open file: " << filePath << std::endl;
+        // 22 std::cerr << "[" << getCurrentTime() << "] " << "transcriptionProcessor.cpp Could not open file: " << filePath << std::endl;
         return mapping;
     }
 
@@ -91,22 +94,36 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
     {
         nlohmann::json j;
         file >> j;
-        // 22 std::cerr << "transcriptionProcessor.cpp JSON: " << j << std::endl;
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "L98 transcriptionProcessor.cpp JSON: " << j << std::endl;
         for (const auto &[key, value] : j.items())
         {
-            mapping[key] = value.is_string() ? value.get<std::string>() : std::to_string(value.get<int>());
+            if (value.is_string())
+            {
+                mapping[key] = value.get<std::string>();
+            }
+            else if (value.is_number())
+            {
+                mapping[key] = std::to_string(value.get<int>());
+            }
+            else
+            {
+                std::cerr << "[" << getCurrentTime() << "] "
+                          << "L112 transcriptionProcessor.cpp Unexpected type for key: " << key << std::endl;
+            }
         }
     }
     catch (const nlohmann::json::exception &e)
     {
-        std::cerr << "transcriptionProcessor.cpp JSON Error: " << e.what() << std::endl;
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "L119 transcriptionProcessor.cpp JSON Error: " << e.what() << std::endl;
     }
     return mapping;
 }
 
 std::string extractActualTranscription(const std::string &transcription)
 {
-    std::cerr << "transcriptionProcessor.cpp Received transcription string: " << transcription << std::endl;
+    // 22 std::cerr << "[" << getCurrentTime() << "] " << "transcriptionProcessor.cpp Received transcription string: " << transcription << std::endl;
     static const std::regex text_regex("\"text\":\"([^\"]+)\"");
     std::smatch match;
     return std::regex_search(transcription, match, text_regex) && match.size() > 1 ? match.str(1) : "";

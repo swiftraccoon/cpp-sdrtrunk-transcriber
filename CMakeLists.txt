@@ -24,7 +24,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include CLI11/include)
 
 # Main Executable Configuration
 # Define the executable and its source files
-add_executable(sdrTrunkTranscriber main.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp ConfigSingleton.cpp transcriptionProcessor.cpp)
+add_executable(sdrTrunkTranscriber main.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp ConfigSingleton.cpp transcriptionProcessor.cpp debugUtils.cpp)
 
 # Specify include directories for the main executable
 target_include_directories(sdrTrunkTranscriber PUBLIC

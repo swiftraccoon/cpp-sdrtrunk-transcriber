@@ -16,6 +16,7 @@
 #include "ConfigSingleton.h"
 #include "curlHelper.h"
 #include "DatabaseManager.h"
+#include "debugUtils.h"
 #include "FileData.h"
 #include "fileProcessor.h"
 
@@ -40,7 +41,8 @@ std::optional<YAML::Node> loadConfig(const std::string &configPath)
 {
     if (!std::filesystem::exists(configPath))
     {
-        std::cerr << "main.cpp Configuration file not found.\n";
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "L43 main.cpp Configuration file not found.\n";
         return std::nullopt;
     }
     // TODO: add more error handling here?
@@ -60,15 +62,15 @@ void processDirectory(const std::string &directoryToMonitor, const YAML::Node &c
         {
             if (entry.path().extension() == MP3_EXTENSION)
             {
-                // 22 std::cout << "main.cpp Processing directory: " << directoryToMonitor << std::endl;
-                // 22 std::cout << "main.cpp Checking file: " << entry.path() << std::endl;
+                // 22 std::cout << "[" << getCurrentTime() << "] " << "main.cpp Processing directory: " << directoryToMonitor << std::endl;
+                // 22 std::cout << "[" << getCurrentTime() << "] " << "main.cpp Checking file: " << entry.path() << std::endl;
                 try
                 {
                     fileData = processFile(entry.path(), directoryToMonitor, OPENAI_API_KEY);
                 }
                 catch (const std::runtime_error &e)
                 {
-                    // 22 std::cerr << "main.cpp Skipping file: " << e.what() << std::endl;
+                    // 22 std::cerr << "[" << getCurrentTime() << "] " << "main.cpp Skipping file: " << e.what() << std::endl;
                     continue; // Move on to the next file
                 }
 
@@ -79,7 +81,8 @@ void processDirectory(const std::string &directoryToMonitor, const YAML::Node &c
                 }
                 catch (const std::exception &e)
                 {
-                    std::cerr << "main.cpp Database insertion failed: " << e.what() << std::endl;
+                    std::cerr << "[" << getCurrentTime() << "] "
+                              << "main.cpp Database insertion failed: " << e.what() << std::endl;
                 }
             }
         }
@@ -88,7 +91,8 @@ void processDirectory(const std::string &directoryToMonitor, const YAML::Node &c
 
 int main(int argc, char *argv[])
 {
-    std::cout << "main.cpp started." << std::endl;
+    std::cout << "[" << getCurrentTime() << "] "
+              << "main.cpp started." << std::endl;
     FileData fileData{};
 
     CLI::App app{"transcribe and process SDRTrunk mp3 recordings"};
@@ -104,12 +108,16 @@ int main(int argc, char *argv[])
     YAML::Node config = configOpt.value();
 
     // Debugging: Print out all config.yaml variables
-    std::cout << "=======================================" << std::endl;
-    std::cout << "Config variables:" << std::endl;
-    for (YAML::const_iterator it = config.begin(); it != config.end(); ++it) {
+    std::cout << "[" << getCurrentTime() << "] "
+              << "=======================================" << std::endl;
+    std::cout << "[" << getCurrentTime() << "] "
+              << "Config variables:" << std::endl;
+    for (YAML::const_iterator it = config.begin(); it != config.end(); ++it)
+    {
         std::cout << it->first.as<std::string>() << ": " << it->second.as<std::string>() << std::endl;
     }
-    std::cout << "=======================================" << std::endl;
+    std::cout << "[" << getCurrentTime() << "] "
+              << "=======================================" << std::endl;
 
     ConfigSingleton::getInstance().initialize(config);
 
@@ -126,6 +134,5 @@ int main(int argc, char *argv[])
         processDirectory(directoryToMonitor, config, dbManager);
         std::this_thread::sleep_for(std::chrono::seconds(loopWaitSeconds));
     }
-    std::cout << "main.cpp ending." << std::endl;
     return 0;
 }

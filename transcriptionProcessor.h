@@ -4,6 +4,7 @@
 // Standard Library Headers
 #include <string>
 #include <unordered_map>
+#include <functional>
 
 // Third-Party Library Headers
 #include <yaml-cpp/yaml.h>
@@ -12,6 +13,8 @@
 std::unordered_map<std::string, std::string> readMappingFile(const std::string &filePath);
 
 std::string extractActualTranscription(const std::string &transcription);
+
+std::string getAppropriateFile(int talkgroupID, std::function<std::string()> getNCSHPFile, std::function<std::string()> getDefaultFile);
 
 void insertMappings(std::stringstream &orderedJsonStr, const std::string &actualTranscription, const std::unordered_map<std::string, std::string> &mappings);
 
