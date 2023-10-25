@@ -65,11 +65,16 @@ void find_and_move_mp3_without_txt(const std::string &directoryToMonitor)
 
 std::string getMP3Duration(const std::string &mp3FilePath)
 {
-    std::stringstream cmd;
-    cmd << "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " << mp3FilePath;
+    // Define the command and arguments separately
+    const char *cmd = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1";
+    char fullCmd[512];
 
-    // Execute the ffprobe command and capture the output
-    FILE *pipe = popen(cmd.str().c_str(), "r");
+    // Safely format the full command string
+    snprintf(fullCmd, sizeof(fullCmd), "%s %s", cmd, mp3FilePath.c_str());
+
+    // Execute the command
+    FILE *pipe = popen(fullCmd, "r");
+
     if (!pipe)
     {
         std::cerr << "fileProcessor.cpp Error executing ffprobe." << std::endl;
