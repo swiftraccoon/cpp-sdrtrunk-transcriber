@@ -9,10 +9,10 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
-#include <thread>
 #include <string>
-#include <vector>
+#include <thread>
 #include <unistd.h>
+#include <vector>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -158,13 +158,21 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
         //  Extract talkgroup ID
         size_t start = filename.find("TO_") + 3;
         size_t end = filename.find("_FROM_");
+
+        // Find the last underscore before "_FROM_" to correctly set the end position
+        size_t lastUnderscoreBeforeFrom = filename.rfind('_', end - 1);
+        if (lastUnderscoreBeforeFrom != std::string::npos && lastUnderscoreBeforeFrom > start) {
+            end = lastUnderscoreBeforeFrom;
+        }
+
         std::string talkgroupID = filename.substr(start, end - start);
-        // 22 std::cout << "fileProcessor.cpp talkgroupID: " << talkgroupID << std::endl;
-        //  Check if talkgroupID starts with 'P_'
+
+        // Check if talkgroupID starts with 'P_'
         if (talkgroupID.substr(0, 2) == "P_")
         {
             talkgroupID = talkgroupID.substr(2); // Remove the 'P_' prefix
         }
+
         // Check if talkgroupID contains square brackets and extract the ID before it
         size_t bracketPos = talkgroupID.find("[");
         if (bracketPos != std::string::npos)

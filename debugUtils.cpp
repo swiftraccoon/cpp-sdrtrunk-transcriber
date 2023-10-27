@@ -1,7 +1,7 @@
 #include "debugUtils.h"
 #include <chrono>
-#include <iomanip>
 #include <ctime>
+#include <iomanip>
 #include <sstream>
 
 std::string getCurrentTime() {

@@ -1,16 +1,15 @@
 // Standard Library Headers
+#include <algorithm>
+#include <cctype>
+#include <deque>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <regex>
 #include <sstream>
 #include <unordered_map>
-#include <vector>
-#include <deque>
-#include <functional>
-#include <algorithm>
-#include <cctype>
 #include <unordered_set>
-#include <functional>
+#include <vector>
 
 // Third-Party Library Headers
 #include "json/single_include/nlohmann/json.hpp"
@@ -94,8 +93,8 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
     {
         nlohmann::json j;
         file >> j;
-        //22 std::cerr << "[" << getCurrentTime() << "] "
-        //22           << "L98 transcriptionProcessor.cpp JSON: " << j << std::endl;
+        // 22 std::cerr << "[" << getCurrentTime() << "] "
+        // 22           << "L98 transcriptionProcessor.cpp JSON: " << j << std::endl;
         for (const auto &[key, value] : j.items())
         {
             if (value.is_string())
@@ -109,31 +108,30 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
             else if (value.is_array())
             {
                 std::cerr << "[" << getCurrentTime() << "] "
-                          << "transcriptionProcessor.cpp Array type detected for key: " << key << std::endl;
-                // Handle array type if needed
+                          << "transcriptionProcessor.cpp Array type detected for key: " << key << "in " << filePath << std::endl;
             }
             else if (value.is_object())
             {
+                // std::stringstream ss;
+                // ss << value;
+                // mapping[key] = ss.str();
                 std::cerr << "[" << getCurrentTime() << "] "
-                          << "transcriptionProcessor.cpp Object type detected for key: " << key << std::endl;
-                // Handle object type if needed
+                          << "transcriptionProcessor.cpp Object type detected for key: " << key << "in " << filePath << std::endl;
             }
             else if (value.is_boolean())
             {
                 std::cerr << "[" << getCurrentTime() << "] "
-                          << "transcriptionProcessor.cpp Boolean type detected for key: " << key << std::endl;
-                // Handle boolean type if needed
+                          << "transcriptionProcessor.cpp Boolean type detected for key: " << key << "in " << filePath << std::endl;
             }
             else if (value.is_null())
             {
                 std::cerr << "[" << getCurrentTime() << "] "
-                          << "transcriptionProcessor.cpp Null type detected for key: " << key << std::endl;
-                // Handle null type if needed
+                          << "transcriptionProcessor.cpp Null type detected for key: " << key << "in " << filePath << std::endl;
             }
             else
             {
                 std::cerr << "[" << getCurrentTime() << "] "
-                          << "transcriptionProcessor.cpp Unexpected type for key: " << key << std::endl;
+                          << "transcriptionProcessor.cpp Unexpected type for key: " << key << "in " << filePath << std::endl;
             }
         }
     }
