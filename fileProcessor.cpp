@@ -120,127 +120,140 @@ int generateUnixTimestamp(const std::string &date, const std::string &time)
     return std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch()).count();
 }
 
+// Checks if the file should be skipped
+bool skipFile(const std::string &file_path)
+{
+    return isFileBeingWrittenTo(file_path) || isFileLocked(file_path);
+}
+
+// Validates the duration of the MP3 file
+bool validateDuration(const std::string &file_path)
+{
+    std::string durationStr = getMP3Duration(file_path);
+    float duration = std::stof(durationStr);
+    if (duration < 9.0)
+    {
+        std::filesystem::remove(file_path);
+        return true;
+    }
+    return false;
+}
+
+// Transcribes the audio file
+std::string transcribeAudio(const std::string &file_path, const std::string &OPENAI_API_KEY)
+{
+    return curl_transcribe_audio(file_path, OPENAI_API_KEY);
+}
+
+// Extracts information from the filename and transcription
+void extractFileInfo(FileData &fileData, const std::string &filename, const std::string &transcription)
+{
+    //  Extract talkgroup ID
+    size_t start = filename.find("TO_") + 3;
+    size_t end = filename.find("_FROM_");
+
+    // Find the last underscore before "_FROM_" to correctly set the end position
+    size_t lastUnderscoreBeforeFrom = filename.rfind('_', end - 1);
+    if (lastUnderscoreBeforeFrom != std::string::npos && lastUnderscoreBeforeFrom > start) {
+        end = lastUnderscoreBeforeFrom;
+    }
+
+    std::string talkgroupID = filename.substr(start, end - start);
+
+    // Check if talkgroupID starts with 'P_'
+    if (talkgroupID.substr(0, 2) == "P_")
+    {
+        talkgroupID = talkgroupID.substr(2); // Remove the 'P_' prefix
+    }
+
+    // Check if talkgroupID contains square brackets and extract the ID before it
+    size_t bracketPos = talkgroupID.find("[");
+    if (bracketPos != std::string::npos)
+    {
+        talkgroupID = talkgroupID.substr(0, bracketPos);
+    }
+    // Extract variables from filename
+    std::string date = filename.substr(0, 8);
+    std::string time = filename.substr(9, 6);
+    size_t startRadioID = filename.find("_FROM_") + 6;
+    size_t endRadioID = filename.find(".mp3");
+    std::string radioID = filename.substr(startRadioID, endRadioID - startRadioID);
+    fileData.radioID = std::stoi(radioID);
+    fileData.talkgroupID = std::stoi(talkgroupID);
+    fileData.date = date;
+    fileData.time = time;
+    fileData.unixtime = generateUnixTimestamp(fileData.date, fileData.time);
+    fileData.filename = filename;
+    fileData.transcription = transcription;
+    fileData.v2transcription = generateV2Transcription(transcription, fileData.talkgroupID, fileData.radioID);
+}
+
+// Saves the transcription to a TXT file
+void saveTranscription(const FileData &fileData)
+{
+    std::string txt_filename = fileData.filename.substr(0, fileData.filename.size() - 4) + ".txt";
+    std::ofstream txt_file(txt_filename);
+    txt_file << fileData.v2transcription;
+    txt_file.close();
+}
+
+// Moves the MP3 and TXT files to the appropriate subdirectory
+void moveFiles(const FileData &fileData, const std::string &directoryToMonitor)
+{
+    std::filesystem::path subDir = std::filesystem::path(directoryToMonitor) / std::to_string(fileData.talkgroupID);
+    if (!std::filesystem::exists(subDir))
+    {
+        std::filesystem::create_directory(subDir);
+    }
+    
+    //22 std::cout << "Moving file from: " << fileData.filepath << " to: " << (subDir / fileData.filename) << std::endl;  // Debug statement
+    
+    if (std::filesystem::exists(fileData.filepath))
+    {
+        std::filesystem::rename(fileData.filepath, subDir / fileData.filename);
+    }
+    
+    std::string txt_filename = fileData.filename.substr(0, fileData.filename.size() - 4) + ".txt";
+    
+    //22 std::cout << "Moving txt from: " << txt_filename << " to: " << (subDir / txt_filename) << std::endl;  // Debug statement
+    
+    if (std::filesystem::exists(txt_filename))
+    {
+        std::filesystem::rename(txt_filename, subDir / txt_filename);
+    }
+}
+
+
+// The refactored processFile function
 FileData processFile(const std::filesystem::path &path, const std::string &directoryToMonitor, const std::string &OPENAI_API_KEY)
 {
-    FileData fileData;
-    std::string file_path = path.string();
-    std::string filename = path.filename().string();
-    if (isFileBeingWrittenTo(file_path) || isFileLocked(file_path))
-    {
-        // Skipping file
-        return FileData();
-    }
-
-    std::string durationStr = getMP3Duration(file_path);
     try
     {
-        float duration = std::stof(durationStr);
-        if (duration < 9.0)
-        {
-            // 22 std::cerr << "fileProcessor.cpp File duration is less than 9 seconds. Deleting..." << std::endl;
-            std::filesystem::remove(file_path);                                              // Delete the file
-            throw std::runtime_error("fileProcessor.cpp File duration less than 9 seconds"); // Throw an exception
-        }
-    }
-    catch (const std::invalid_argument &e)
-    {
-        std::cerr << "fileProcessor.cpp Invalid argument: " << e.what() << std::endl;
-    }
-    catch (const std::out_of_range &e)
-    {
-        std::cerr << "fileProcessor.cpp Out of range: " << e.what() << std::endl;
-    }
+        FileData fileData;
+        std::string file_path = path.string();
+        
+        //22 std::cout << "Processing file: " << file_path << std::endl;  // Debug statement
 
-    try
-    {
-        std::string transcription = curl_transcribe_audio(file_path, OPENAI_API_KEY);
-        // 22 std::cout << "fileProcessor.cpp transcription: " << transcription << std::endl;
-        //  Extract talkgroup ID
-        size_t start = filename.find("TO_") + 3;
-        size_t end = filename.find("_FROM_");
+        bool shouldSkip = skipFile(file_path) || validateDuration(file_path);
+        
+        //22 std::cout << "Should skip: " << shouldSkip << std::endl;  // Debug statement
 
-        // Find the last underscore before "_FROM_" to correctly set the end position
-        size_t lastUnderscoreBeforeFrom = filename.rfind('_', end - 1);
-        if (lastUnderscoreBeforeFrom != std::string::npos && lastUnderscoreBeforeFrom > start) {
-            end = lastUnderscoreBeforeFrom;
-        }
-
-        std::string talkgroupID = filename.substr(start, end - start);
-
-        // Check if talkgroupID starts with 'P_'
-        if (talkgroupID.substr(0, 2) == "P_")
+        if (shouldSkip)
         {
-            talkgroupID = talkgroupID.substr(2); // Remove the 'P_' prefix
+            return FileData(); // Skip further processing
         }
-
-        // Check if talkgroupID contains square brackets and extract the ID before it
-        size_t bracketPos = talkgroupID.find("[");
-        if (bracketPos != std::string::npos)
-        {
-            talkgroupID = talkgroupID.substr(0, bracketPos);
-        }
-        // Extract variables from filename
-        std::string date = filename.substr(0, 8);
-        std::string time = filename.substr(9, 6);
-        size_t startRadioID = filename.find("_FROM_") + 6;
-        size_t endRadioID = filename.find(".mp3");
-        std::string radioID = filename.substr(startRadioID, endRadioID - startRadioID);
-        // 22 std::cout << "fileProcessor.cpp radioID: " << radioID << std::endl;
-        try
-        {
-            fileData.talkgroupID = std::stoi(talkgroupID);
-        }
-        catch (const std::invalid_argument &e)
-        {
-            std::cerr << "fileProcessor.cpp Invalid argument for talkgroupID: " << e.what() << std::endl;
-        }
-        catch (const std::out_of_range &e)
-        {
-            std::cerr << "fileProcessor.cpp Out of range for talkgroupID: " << e.what() << std::endl;
-        }
-        try
-        {
-            fileData.radioID = std::stoi(radioID);
-        }
-        catch (const std::invalid_argument &e)
-        {
-            std::cerr << "fileProcessor.cpp Invalid argument for radioID: " << e.what() << std::endl;
-        }
-        catch (const std::out_of_range &e)
-        {
-            std::cerr << "fileProcessor.cpp Out of range for radioID: " << e.what() << std::endl;
-        }
-        fileData.v2transcription = generateV2Transcription(transcription, fileData.talkgroupID, fileData.radioID);
-
-        // Save transcription to TXT file
-        std::string txt_filename = filename.substr(0, filename.size() - 4) + ".txt";
-        std::ofstream txt_file(txt_filename);
-        txt_file << fileData.v2transcription;
-        txt_file.close();
-
-        // Create subdirectory if it doesn't exist
-        std::filesystem::path subDir = std::filesystem::path(directoryToMonitor) / talkgroupID;
-        if (!std::filesystem::exists(subDir))
-        {
-            std::filesystem::create_directory(subDir);
-        }
-        fileData.duration = getMP3Duration(file_path);
-
-        // Move MP3 and TXT files to subdirectory
-        std::filesystem::rename(file_path, subDir / filename);
-        std::filesystem::rename(txt_filename, subDir / txt_filename);
-
-        fileData.date = date;
-        fileData.time = time;
-        fileData.unixtime = generateUnixTimestamp(fileData.date, fileData.time);
-        fileData.filename = filename;
         fileData.filepath = file_path;
-        fileData.transcription = transcription;
+        std::string transcription = transcribeAudio(file_path, OPENAI_API_KEY);
+        extractFileInfo(fileData, path.filename().string(), transcription);
+
+        saveTranscription(fileData);
+        moveFiles(fileData, directoryToMonitor);
+
         return fileData;
     }
     catch (const std::exception &e)
     {
-        std::cerr << "fileProcessor.cpp Error: " << e.what() << std::endl;
+        std::cerr << "fileProcessor.cpp processFile Error: " << e.what() << std::endl;
         return FileData();
     }
 }
