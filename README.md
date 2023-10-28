@@ -84,4 +84,3 @@ Feel free to open issues or submit pull requests.
 ## License
 
 This project is licensed under the GPL-3.0 license. See the [LICENSE](LICENSE) file for details.
-This project is licensed under the GPL-3.0 license. See the LICENSE file for details.
