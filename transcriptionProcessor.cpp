@@ -161,7 +161,7 @@ void insertMappings(std::stringstream &orderedJsonStr, const std::string &actual
         std::smatch match;
         if (std::regex_search(actualTranscription, match, keyRegex) && insertedKeys.find(key) == insertedKeys.end())
         {
-            orderedJsonStr << ",\"" << key << "\":\"" << value << "\"";
+            orderedJsonStr << ", \"" << key << "\":\"" << value << "\"";
             insertedKeys.insert(key);
         }
     }
