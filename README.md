@@ -1,14 +1,12 @@
-[![CodeFactor](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber/badge)](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber)
-
-(Python version: https://github.com/swiftraccoon/sdrtrunk-transcriber)
-
-(released Node.JS website for displaying data: https://github.com/swiftraccoon/sdrtrunk-transcribed-web)
-
 # C++ SDRTrunk Transcriber
-
+[![CodeFactor](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber/badge)](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber)
 ## Overview
 
-This project is designed to monitor a directory for SDRTrunk MP3 files, categorize them based on the talkgroup ID, and create transcription files. It utilizes OpenAI's API for audio transcription and SQLite3 for database management.
+This project is designed to monitor a directory for SDRTrunk P25 MP3 files, categorize them based on the talkgroup ID, and create transcription files. It utilizes OpenAI's API for audio transcription and SQLite3 for database management.
+
+## Related Projects
+- [sdrtrunk-transcriber](https://github.com/swiftraccoon/sdrtrunk-transcriber) (Python version of this repo)
+- [sdrtrunk-transcribed-web](https://github.com/swiftraccoon/sdrtrunk-transcribed-web) (Node.JS website for displaying mp3/txt files processed by this project)
 
 ## Table of Contents
 
@@ -69,6 +67,8 @@ Run the compiled binary with the following options:
 - `-h, --help`: Display help message.
 
 ## System Service
+
+**This is still a TODO. It should work in theory but I've not yet tested it.**
 
 A BASH script is provided to show an example template for setting up the binary as a Linux system service.
 
