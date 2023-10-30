@@ -90,51 +90,52 @@ void processDirectory(const std::string &directoryToMonitor, const YAML::Node &c
             }
         }
     }
+}
 
-    int main(int argc, char *argv[])
+int main(int argc, char *argv[])
+{
+    std::cout << "[" << getCurrentTime() << "] "
+              << "main.cpp started." << std::endl;
+    FileData fileData{};
+
+    CLI::App app{"transcribe and process SDRTrunk mp3 recordings"};
+    std::string configPath = DEFAULT_CONFIG_PATH;
+    app.add_option("-c,--config", configPath, "Configuration path (Optional, default is './config.yaml')");
+    CLI11_PARSE(app, argc, argv);
+
+    auto configOpt = loadConfig(configPath);
+    if (!configOpt.has_value())
     {
-        std::cout << "[" << getCurrentTime() << "] "
-                  << "main.cpp started." << std::endl;
-        FileData fileData{};
-
-        CLI::App app{"transcribe and process SDRTrunk mp3 recordings"};
-        std::string configPath = DEFAULT_CONFIG_PATH;
-        app.add_option("-c,--config", configPath, "Configuration path (Optional, default is './config.yaml')");
-        CLI11_PARSE(app, argc, argv);
-
-        auto configOpt = loadConfig(configPath);
-        if (!configOpt.has_value())
-        {
-            return 1;
-        }
-        YAML::Node config = configOpt.value();
-
-        // Debugging: Print out all config.yaml variables
-        std::cout << "[" << getCurrentTime() << "] "
-                  << "=======================================" << std::endl;
-        std::cout << "[" << getCurrentTime() << "] "
-                  << "Config variables:" << std::endl;
-        for (YAML::const_iterator it = config.begin(); it != config.end(); ++it)
-        {
-            std::cout << it->first.as<std::string>() << ": " << it->second.as<std::string>() << std::endl;
-        }
-        std::cout << "[" << getCurrentTime() << "] "
-                  << "=======================================" << std::endl;
-
-        ConfigSingleton::getInstance().initialize(config);
-
-        std::string databasePath = ConfigSingleton::getInstance().getDatabasePath();
-        DatabaseManager dbManager(databasePath);
-        dbManager.createTable();
-
-        // Cache frequently accessed config values
-        std::string directoryToMonitor = config["DirectoryToMonitor"].as<std::string>();
-        int loopWaitSeconds = config["LoopWaitSeconds"].as<int>();
-
-        while (true)
-        {
-            processDirectory(directoryToMonitor, config, dbManager);
-            std::this_thread::sleep_for(std::chrono::seconds(loopWaitSeconds));
-        }
-        return 0;
+        return 1;
     }
+    YAML::Node config = configOpt.value();
+
+    // Debugging: Print out all config.yaml variables
+    std::cout << "[" << getCurrentTime() << "] "
+              << "=======================================" << std::endl;
+    std::cout << "[" << getCurrentTime() << "] "
+              << "Config variables:" << std::endl;
+    for (YAML::const_iterator it = config.begin(); it != config.end(); ++it)
+    {
+        std::cout << it->first.as<std::string>() << ": " << it->second.as<std::string>() << std::endl;
+    }
+    std::cout << "[" << getCurrentTime() << "] "
+              << "=======================================" << std::endl;
+
+    ConfigSingleton::getInstance().initialize(config);
+
+    std::string databasePath = ConfigSingleton::getInstance().getDatabasePath();
+    DatabaseManager dbManager(databasePath);
+    dbManager.createTable();
+
+    // Cache frequently accessed config values
+    std::string directoryToMonitor = config["DirectoryToMonitor"].as<std::string>();
+    int loopWaitSeconds = config["LoopWaitSeconds"].as<int>();
+
+    while (true)
+    {
+        processDirectory(directoryToMonitor, config, dbManager);
+        std::this_thread::sleep_for(std::chrono::seconds(loopWaitSeconds));
+    }
+    return 0;
+}
