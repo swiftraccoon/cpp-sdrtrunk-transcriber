@@ -127,16 +127,15 @@ bool skipFile(const std::string &file_path)
 }
 
 // Validates the duration of the MP3 file
-bool validateDuration(const std::string &file_path)
-{
+float validateDuration(const std::string &file_path, FileData &fileData) {
     std::string durationStr = getMP3Duration(file_path);
     float duration = std::stof(durationStr);
-    if (duration < 9.0)
-    {
+    fileData.duration = durationStr;  // Set the duration in FileData
+    if (duration < 9.0) {
         std::filesystem::remove(file_path);
-        return true;
+        return 0.0;
     }
-    return false;
+    return duration;
 }
 
 // Transcribes the audio file
@@ -230,16 +229,13 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
     try
     {
         FileData fileData;
-        std::string file_path = path.string();
-        
+        std::string file_path = path.string(); 
         //22 std::cout << "Processing file: " << file_path << std::endl;  // Debug statement
-
-        bool shouldSkip = skipFile(file_path) || validateDuration(file_path);
-        
+        bool shouldSkip = skipFile(file_path);
+        float duration = validateDuration(file_path, fileData);
         //22 std::cout << "Should skip: " << shouldSkip << std::endl;  // Debug statement
-
-        if (shouldSkip)
-        {
+        shouldSkip = shouldSkip || (duration == 0.0);  // Update this line
+        if (shouldSkip) {
             return FileData(); // Skip further processing
         }
         fileData.filepath = file_path;
