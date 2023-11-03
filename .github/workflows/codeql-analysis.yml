@@ -1,0 +1,35 @@
+name: "CodeQL Analysis"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Scheduled run at 00:00 every day.
+
+jobs:
+  analyze:
+    name: Analyze on Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libcurl4-openssl-dev libsqlite3-dev pkg-config
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: 'cpp'
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+      # If the autobuild step fails, you might need to replace it with custom build steps.
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
