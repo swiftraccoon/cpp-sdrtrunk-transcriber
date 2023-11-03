@@ -6,11 +6,7 @@ on:
   pull_request:
     branches: [ main ]
   schedule:
-    - cron: '0 0 * * 0'  # Scheduled run at 00:00 every day.
-
-permissions:
-  contents: read
-  security-events: write
+    - cron: '0 0 * * 0'
 
 jobs:
   analyze:
@@ -20,11 +16,22 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+      with:
+        submodules: 'recursive' # This will checkout submodules
 
-    - name: Setup dependencies
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y libcurl4-openssl-dev libsqlite3-dev pkg-config
+
+    - name: Install Google Test
+      run: |
+        sudo apt-get install -y libgtest-dev
+        sudo apt-get install -y cmake
+        cd /usr/src/gtest
+        sudo cmake CMakeLists.txt
+        sudo make
+        sudo cp *.a /usr/lib
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
@@ -33,7 +40,12 @@ jobs:
 
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
-      # If the autobuild step fails, you might need to replace it with custom build steps.
+      # If the autobuild step fails, you can replace it with custom build commands:
+      # run: |
+      #   mkdir build
+      #   cd build
+      #   cmake -DCMAKE_BUILD_TYPE=Release ..
+      #   make
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
