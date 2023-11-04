@@ -8,6 +8,10 @@ on:
   schedule:
     - cron: '0 0 * * 0'
 
+permissions:
+  security-events: write
+  contents: read   
+
 jobs:
   analyze:
     name: Analyze on Ubuntu
