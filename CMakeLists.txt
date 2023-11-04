@@ -30,6 +30,7 @@ add_executable(sdrTrunkTranscriber main.cpp curlHelper.cpp DatabaseManager.cpp f
 target_include_directories(sdrTrunkTranscriber PUBLIC
     ${CURL_INCLUDE_DIRS}
     ${SQLite3_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
 )
 
 # Link required libraries to the main executable
@@ -39,6 +40,9 @@ target_link_libraries(sdrTrunkTranscriber
     SQLite::SQLite3 # SQLite3 for database operations
     CLI11::CLI11
 )
+
+target_include_directories(sdrTrunkTranscriber PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include)
+
 
 # Test Configuration
 # Enable testing functionality
@@ -51,7 +55,7 @@ find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
 #
-include_directories(external/json)
+include_directories(${PROJECT_SOURCE_DIR}/external/json/single_include)
 
 # Define the test executable and its source files
 add_executable(runTests test.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp ConfigSingleton.cpp transcriptionProcessor.cpp debugUtils.cpp)

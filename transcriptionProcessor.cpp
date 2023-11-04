@@ -12,7 +12,7 @@
 #include <vector>
 
 // Third-Party Library Headers
-#include <json/single_include/nlohmann/json.hpp>
+#include <nlohmann/json.hpp>
 #include <yaml-cpp/yaml.h>
 
 // Project-Specific Headers
