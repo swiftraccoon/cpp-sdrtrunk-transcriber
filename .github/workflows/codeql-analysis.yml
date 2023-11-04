@@ -21,12 +21,15 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
       with:
-        submodules: 'true'
+        submodules: 'recursive'
+    
+    - name: Update submodules
+      run: git submodule update --init --recursive
 
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libcurl4-openssl-dev libsqlite3-dev pkg-config
+        sudo apt-get install -y libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev
 
     - name: Build and Install Google Test
       run: |
