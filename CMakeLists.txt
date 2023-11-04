@@ -19,8 +19,8 @@ find_package(PkgConfig REQUIRED)
 # Add yaml-cpp subdirectory to build YAML parser library
 add_subdirectory(yaml-cpp)
 
-# Include the directory where CLI11.hpp is located
-include_directories(${CMAKE_SOURCE_DIR}/CLI11/include)
+# Add CLI11 as a subdirectory
+add_subdirectory(external/CLI11)
 
 # Main Executable Configuration
 # Define the executable and its source files
@@ -37,6 +37,7 @@ target_link_libraries(sdrTrunkTranscriber
     CURL::libcurl  # CURL for HTTP requests
     yaml-cpp       # YAML parser
     SQLite::SQLite3 # SQLite3 for database operations
+    CLI11::CLI11
 )
 
 # Test Configuration

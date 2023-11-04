@@ -7,6 +7,6 @@
 [submodule "whisper.cpp"]
     path = whisper.cpp
     url = https://github.com/ggerganov/whisper.cpp.git
-[submodule "CLI11"]
-    path = CLI11
+[submodule "external/CLI11"]
+    path = external/CLI11
     url = https://github.com/CLIUtils/CLI11.git
