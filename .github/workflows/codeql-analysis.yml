@@ -31,20 +31,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev
 
-    - name: Build and Install Google Test
-      run: |
-        sudo apt-get install -y libgtest-dev
-        sudo apt-get install -y cmake
-        # Go to the directory containing the Google Test source
-        cd /usr/src/gtest
-        # Use cmake to generate the build files
-        sudo cmake CMakeLists.txt
-        # Build the Google Test libraries
-        sudo make
-        # Find and copy the static library files to the correct directory
-        sudo find . -name '*.a' -exec cp {} /usr/lib \;
-    
-
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
