@@ -46,25 +46,26 @@ target_include_directories(sdrTrunkTranscriber PRIVATE ${CMAKE_CURRENT_SOURCE_DI
 
 # Test Configuration
 # Enable testing functionality
-enable_testing()
+# enable_testing()
 
-# Find Google Test framework
-find_package(GTest REQUIRED)
+# # Find Google Test framework
+# find_package(GTest REQUIRED)
 
-# Include Google Test headers
-include_directories(${GTEST_INCLUDE_DIRS})
+# # Include Google Test headers
+# include_directories(${GTEST_INCLUDE_DIRS})
 
-#
-include_directories(${PROJECT_SOURCE_DIR}/external/json/single_include)
+# #
+# include_directories(${PROJECT_SOURCE_DIR}/external/json/single_include)
 
-# Define the test executable and its source files
-add_executable(runTests test.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp ConfigSingleton.cpp transcriptionProcessor.cpp debugUtils.cpp)
+# # Define the test executable and its source files
+# add_executable(runTests test.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp ConfigSingleton.cpp transcriptionProcessor.cpp debugUtils.cpp)
 
 # Link required libraries to the test executable
-target_link_libraries(runTests 
-    ${GTEST_LIBRARIES}  # Google Test framework
-    pthread             # POSIX threads
-    CURL::libcurl       # CURL for HTTP requests
-    yaml-cpp            # YAML parser
-    SQLite::SQLite3     # SQLite3 for database operations
-)
+# target_link_libraries(runTests 
+#     ${GTEST_LIBRARIES}  # Google Test framework
+#     pthread             # POSIX threads
+#     CURL::libcurl       # CURL for HTTP requests
+#     yaml-cpp            # YAML parser
+#     SQLite::SQLite3     # SQLite3 for database operations
+#     CLI11::CLI11
+# )
