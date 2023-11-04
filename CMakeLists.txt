@@ -17,7 +17,7 @@ find_package(SQLite3 REQUIRED)
 find_package(PkgConfig REQUIRED)
 
 # Add yaml-cpp subdirectory to build YAML parser library
-add_subdirectory(yaml-cpp)
+add_subdirectory(external/yaml-cpp)
 
 # Add CLI11 as a subdirectory
 add_subdirectory(external/CLI11)
@@ -51,7 +51,7 @@ find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
 #
-include_directories(json/)
+include_directories(external/json)
 
 # Define the test executable and its source files
 add_executable(runTests test.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp ConfigSingleton.cpp transcriptionProcessor.cpp debugUtils.cpp)

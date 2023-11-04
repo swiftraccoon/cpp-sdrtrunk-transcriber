@@ -1,11 +1,11 @@
-[submodule "yaml-cpp"]
-    path = yaml-cpp
+[submodule "external/yaml-cpp"]
+    path = external/yaml-cpp
     url = https://github.com/jbeder/yaml-cpp.git
-[submodule "json"]
-    path = json
+[submodule "external/json"]
+    path = external/json
     url = https://github.com/nlohmann/json.git
-[submodule "whisper.cpp"]
-    path = whisper.cpp
+[submodule "external/whisper.cpp"]
+    path = external/whisper.cpp
     url = https://github.com/ggerganov/whisper.cpp.git
 [submodule "external/CLI11"]
     path = external/CLI11
