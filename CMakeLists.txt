@@ -20,7 +20,7 @@ find_package(PkgConfig REQUIRED)
 add_subdirectory(yaml-cpp)
 
 # Include the directory where CLI11.hpp is located
-include_directories(${CMAKE_SOURCE_DIR}/include CLI11/include)
+include_directories(${CMAKE_SOURCE_DIR}/CLI11/include)
 
 # Main Executable Configuration
 # Define the executable and its source files
