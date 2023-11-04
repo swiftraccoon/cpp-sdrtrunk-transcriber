@@ -10,7 +10,7 @@
 
 // Third-Party Library Headers
 #include <yaml-cpp/yaml.h>
-#include "CLI11/include/CLI/CLI.hpp"
+#include "CLI/CLI.hpp"
 
 // Project-Specific Headers
 #include "ConfigSingleton.h"
