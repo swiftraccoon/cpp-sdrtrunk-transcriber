@@ -23,6 +23,7 @@ jobs:
         uses: lukka/run-vcpkg@v10
         with:
           vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+          vcpkgGitCommitId: '8eb57355a4ffb410a2e94c07b4dca2dffbee8e50'
 
       - name: Install dependencies
         run: .\vcpkg\vcpkg install curl:x64-windows sqlite3:x64-windows yaml-cpp:x64-windows
