@@ -17,12 +17,12 @@
 #include <sys/wait.h>
 
 // Project-Specific Headers
-#include "ConfigSingleton.h"
-#include "curlHelper.h"
-#include "debugUtils.h"
-#include "FileData.h"
-#include "fileProcessor.h"
-#include "transcriptionProcessor.h"
+#include "../include/ConfigSingleton.h"
+#include "../include/curlHelper.h"
+#include "../include/debugUtils.h"
+#include "../include/FileData.h"
+#include "../include/fileProcessor.h"
+#include "../include/transcriptionProcessor.h"
 
 bool isFileBeingWrittenTo(const std::string &filePath)
 {

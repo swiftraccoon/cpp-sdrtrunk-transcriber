@@ -13,12 +13,12 @@
 #include <CLI/CLI.hpp>
 
 // Project-Specific Headers
-#include "ConfigSingleton.h"
-#include "curlHelper.h"
-#include "DatabaseManager.h"
-#include "debugUtils.h"
-#include "FileData.h"
-#include "fileProcessor.h"
+#include "../include/ConfigSingleton.h"
+#include "../include/curlHelper.h"
+#include "../include/DatabaseManager.h"
+#include "../include/debugUtils.h"
+#include "../include/FileData.h"
+#include "../include/fileProcessor.h"
 
 constexpr const char *DEFAULT_CONFIG_PATH = "./config.yaml";
 constexpr const char *MP3_EXTENSION = ".mp3";

@@ -24,7 +24,7 @@ add_subdirectory(external/CLI11)
 
 # Main Executable Configuration
 # Define the executable and its source files
-add_executable(sdrTrunkTranscriber main.cpp curlHelper.cpp DatabaseManager.cpp fileProcessor.cpp ConfigSingleton.cpp transcriptionProcessor.cpp debugUtils.cpp)
+add_executable(sdrTrunkTranscriber src/main.cpp src/curlHelper.cpp src/DatabaseManager.cpp src/fileProcessor.cpp src/ConfigSingleton.cpp src/transcriptionProcessor.cpp src/debugUtils.cpp)
 
 # Specify include directories for the main executable
 target_include_directories(sdrTrunkTranscriber PUBLIC

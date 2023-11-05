@@ -1,5 +1,5 @@
 // Project-Specific Headers
-#include "ConfigSingleton.h"
+#include "../include/ConfigSingleton.h"
 
 ConfigSingleton &ConfigSingleton::getInstance()
 {

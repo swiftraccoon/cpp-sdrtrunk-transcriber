@@ -8,8 +8,8 @@
 #include <thread>
 
 // Project-Specific Headers
-#include "curlHelper.h"
-#include "debugUtils.h"
+#include "../include/curlHelper.h"
+#include "../include/debugUtils.h"
 
 const std::string API_URL = "https://api.openai.com/v1/audio/transcriptions";
 const int MAX_RETRIES = 6;

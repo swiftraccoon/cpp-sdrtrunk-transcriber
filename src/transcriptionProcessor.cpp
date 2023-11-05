@@ -16,8 +16,8 @@
 #include <yaml-cpp/yaml.h>
 
 // Project-Specific Headers
-#include "ConfigSingleton.h"
-#include "debugUtils.h"
+#include "../include/ConfigSingleton.h"
+#include "../include/debugUtils.h"
 
 std::unordered_map<std::string, std::string> readMappingFile(const std::string &filePath);
 std::string extractActualTranscription(const std::string &transcription);

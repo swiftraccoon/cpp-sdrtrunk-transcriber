@@ -2,8 +2,8 @@
 #include <iostream>
 
 // Project-Specific Headers
-#include "DatabaseManager.h"
-#include "debugUtils.h"
+#include "../include/DatabaseManager.h"
+#include "../include/debugUtils.h"
 
 DatabaseManager::DatabaseManager(const std::string &dbPath)
 {
