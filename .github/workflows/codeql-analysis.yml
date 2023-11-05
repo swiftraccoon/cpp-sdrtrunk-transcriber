@@ -36,14 +36,18 @@ jobs:
       with:
         languages: 'cpp'
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v2
-      # If the autobuild step fails, you can replace it with custom build commands:
-      # run: |
-      #   mkdir build
-      #   cd build
-      #   cmake -DCMAKE_BUILD_TYPE=Release ..
-      #   make
+    - name: Build
+      run: | 
+        mkdir build
+        cd external
+        git clone https://github.com/jbeder/yaml-cpp.git yaml-cpp
+        git clone https://github.com/CLIUtils/CLI11.git CLI11
+        cd ..
+        cp sample-config.yaml build/config.yaml
+        cd build
+        cmake ..
+        make
+        touch recordings.db
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
