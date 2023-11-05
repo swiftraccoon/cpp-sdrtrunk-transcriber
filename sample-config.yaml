@@ -1,7 +1,7 @@
 # Configuration for C++ SDRTrunk Transcriber
 
 # Directory to monitor for new MP3 files
-DirectoryToMonitor: "/home/YOUR_USER/github/cpp-sdrtrunk-transcriber"
+DirectoryToMonitor: "/usr/src/app/cpp-sdrtrunk-transcriber/"
 
 # Number of seconds to wait before looping
 LoopWaitSeconds: 60
@@ -18,16 +18,16 @@ XML_PATH: "/home/YOUR_USER/SDRTrunk/playlist/default.xml"
 # sqlite3 database for saving file information and transcriptions
 # we will be initializing this database
 # schema in DatabaseManager
-DATABASE_PATH: "/home/YOUR_USER/github/cpp-sdrtrunk-transcriber/recordings.db"
+DATABASE_PATH: "/usr/src/app/cpp-sdrtrunk-transcriber/build/recordings.db"
 
 # JSON object files for tensigns
-TENSIGN_FILE: "/home/YOUR_USER/SDRTrunk/TENSIGN.json"
-NCSHP_TENSIGN_FILE: "/home/YOUR_USER/SDRTrunk/NCSHP_TENCODE.json"
+TENSIGN_FILE: "/usr/src/app/cpp-sdrtrunk-transcriber/howToFormatYourJSON.json"
+NCSHP_TENSIGN_FILE: "/usr/src/app/cpp-sdrtrunk-transcriber/howToFormatYourJSON.json"
 
 # JSON object files for callsigns
-CALLSIGNS_FILE: "/home/YOUR_USER/SDRTrunk/unique_recent_callsigns.json"
-NCSHP_CALLSIGNS_FILE: "/home/YOUR_USER/SDRTrunk/unique_recent_callsigns.json"
+CALLSIGNS_FILE: "/usr/src/app/cpp-sdrtrunk-transcriber/howToFormatYourJSON.json"
+NCSHP_CALLSIGNS_FILE: "/usr/src/app/cpp-sdrtrunk-transcriber/howToFormatYourJSON.json"
 
 # JSON object files for signals
-SIGNALS_FILE: "/home/YOUR_USER/SDRTrunk/signals.json"
-NCSHP_SIGNALS_FILE: "/home/YOUR_USER/SDRTrunk/NCSHP_SIGNALS.json"
+SIGNALS_FILE: "/usr/src/app/cpp-sdrtrunk-transcriber/howToFormatYourJSON.json"
+NCSHP_SIGNALS_FILE: "/usr/src/app/cpp-sdrtrunk-transcriber/howToFormatYourJSON.json"
