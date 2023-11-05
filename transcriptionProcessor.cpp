@@ -23,7 +23,7 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
 std::string extractActualTranscription(const std::string &transcription);
 void insertMappings(std::stringstream &orderedJsonStr, const std::string &actualTranscription, const std::unordered_map<std::string, std::string> &mappings);
 
-std::unordered_set<int> specialTalkgroupIDs = {52198, 52199, 52201};
+std::unordered_set<int> specialTalkgroupIDs = {52197, 52198, 52199, 52200, 52201};
 
 std::string getAppropriateFile(int talkgroupID, std::function<std::string()> getNCSHPFile, std::function<std::string()> getDefaultFile)
 {

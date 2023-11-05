@@ -27,6 +27,19 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
+    - name: Install sys dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev
+
+    - name: Git submodules
+      run: | 
+        git submodule update --init --recursive
+        git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
+        git clone https://github.com/CLIUtils/CLI11.git external/CLI11
+        cd ..
+        cp sample-config.yaml build/config.yaml
+
     - name: Build
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
