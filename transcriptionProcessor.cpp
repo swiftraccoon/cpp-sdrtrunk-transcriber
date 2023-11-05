@@ -62,7 +62,7 @@ std::string generateV2Transcription(const std::string &transcription, int talkgr
     if (actualTranscription.empty())
     {
         std::cerr << "[" << getCurrentTime() << "] "
-                  << "L66 transcriptionProcessor.cpp Could not extract actual transcription from JSON-like string." << std::endl;
+                  << "transcriptionProcessor.cpp Could not extract actual transcription from JSON-like string." << std::endl;
         return {};
     }
 
@@ -94,7 +94,7 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
         nlohmann::json j;
         file >> j;
         // 22 std::cerr << "[" << getCurrentTime() << "] "
-        // 22           << "L98 transcriptionProcessor.cpp JSON: " << j << std::endl;
+        // 22           << "transcriptionProcessor.cpp JSON: " << j << std::endl;
         for (const auto &[key, value] : j.items())
         {
             if (value.is_string())

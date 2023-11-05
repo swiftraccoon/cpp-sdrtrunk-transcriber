@@ -3,14 +3,16 @@
 
 // Project-Specific Headers
 #include "DatabaseManager.h"
+#include "debugUtils.h"
 
 DatabaseManager::DatabaseManager(const std::string &dbPath)
 {
     int rc = sqlite3_open(dbPath.c_str(), &db);
     if (rc)
     {
-        std::cerr << "DatabaseManager.cpp Can't open database: " << sqlite3_errmsg(db) << std::endl;
-        throw std::runtime_error("DatabaseManager.cpp Failed to open database");
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "DatabaseManager.cpp Can't open database: " << sqlite3_errmsg(db) << std::endl;
+        throw std::runtime_error("[" + getCurrentTime() + "]" + "DatabaseManager.cpp Failed to open database");
     }
 }
 
@@ -26,7 +28,8 @@ void DatabaseManager::createTable()
     int rc = sqlite3_exec(db, sql, 0, 0, &errMsg);
     if (rc != SQLITE_OK)
     {
-        std::cerr << "DatabaseManager.cpp SQL error: " << errMsg << std::endl;
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "DatabaseManager.cpp SQL error: " << errMsg << std::endl;
         sqlite3_free(errMsg);
     }
 }
@@ -38,7 +41,8 @@ void DatabaseManager::insertRecording(const std::string &date, const std::string
     int rc = sqlite3_prepare_v2(db, insertSQL.c_str(), -1, &stmt, 0);
     if (rc != SQLITE_OK)
     {
-        std::cerr << "DatabaseManager.cpp Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "DatabaseManager.cpp Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
         return;
     }
 
@@ -58,7 +62,8 @@ void DatabaseManager::insertRecording(const std::string &date, const std::string
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE)
     {
-        std::cerr << "DatabaseManager.cpp Execution failed: " << sqlite3_errmsg(db) << std::endl;
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "DatabaseManager.cpp Execution failed: " << sqlite3_errmsg(db) << std::endl;
         sqlite3_finalize(stmt);
         return;
     }

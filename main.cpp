@@ -42,7 +42,7 @@ std::optional<YAML::Node> loadConfig(const std::string &configPath)
     if (!std::filesystem::exists(configPath))
     {
         std::cerr << "[" << getCurrentTime() << "] "
-                  << "L43 main.cpp Configuration file not found.\n";
+                  << "main.cpp Configuration file not found.\n";
         return std::nullopt;
     }
     // TODO: add more error handling here?

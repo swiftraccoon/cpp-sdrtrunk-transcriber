@@ -19,6 +19,7 @@
 // Project-Specific Headers
 #include "ConfigSingleton.h"
 #include "curlHelper.h"
+#include "debugUtils.h"
 #include "FileData.h"
 #include "fileProcessor.h"
 #include "transcriptionProcessor.h"
@@ -66,42 +67,49 @@ void find_and_move_mp3_without_txt(const std::string &directoryToMonitor)
     }
 }
 
-std::string getMP3Duration(const std::string &mp3FilePath) {
+std::string getMP3Duration(const std::string &mp3FilePath)
+{
     int pipefd[2];
-    if (pipe(pipefd) == -1) {
+    if (pipe(pipefd) == -1)
+    {
         perror("pipe");
         exit(EXIT_FAILURE);
     }
 
     pid_t pid = fork();
-    if (pid == -1) {
+    if (pid == -1)
+    {
         perror("fork");
         exit(EXIT_FAILURE);
     }
 
-    if (pid == 0) {  // Child process
-        close(pipefd[0]);  // Close read end
-        dup2(pipefd[1], STDOUT_FILENO);  // Redirect stdout to write end of pipe
-        close(pipefd[1]);  // Close write end (now that it's duplicated)
+    if (pid == 0)
+    {                                   // Child process
+        close(pipefd[0]);               // Close read end
+        dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to write end of pipe
+        close(pipefd[1]);               // Close write end (now that it's duplicated)
 
         execlp("ffprobe", "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", mp3FilePath.c_str(), NULL);
         perror("execlp");
         exit(EXIT_FAILURE);
-    } else {  // Parent process
-        close(pipefd[1]);  // Close write end
+    }
+    else
+    {                     // Parent process
+        close(pipefd[1]); // Close write end
 
         char buffer[128];
         std::string durationStr;
         ssize_t bytesRead;
-        while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0) {
+        while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0)
+        {
             buffer[bytesRead] = '\0';
             durationStr += buffer;
         }
 
-        close(pipefd[0]);  // Close read end
+        close(pipefd[0]); // Close read end
 
         int status;
-        waitpid(pid, &status, 0);  // Wait for child to exit
+        waitpid(pid, &status, 0); // Wait for child to exit
 
         // Remove any trailing newline characters
         durationStr.erase(durationStr.find_last_not_of("\n\r") + 1);
@@ -127,11 +135,13 @@ bool skipFile(const std::string &file_path)
 }
 
 // Validates the duration of the MP3 file
-float validateDuration(const std::string &file_path, FileData &fileData) {
+float validateDuration(const std::string &file_path, FileData &fileData)
+{
     std::string durationStr = getMP3Duration(file_path);
     float duration = std::stof(durationStr);
-    fileData.duration = durationStr;  // Set the duration in FileData
-    if (duration < 9.0) {
+    fileData.duration = durationStr; // Set the duration in FileData
+    if (duration < 9.0)
+    {
         std::filesystem::remove(file_path);
         return 0.0;
     }
@@ -153,7 +163,8 @@ void extractFileInfo(FileData &fileData, const std::string &filename, const std:
 
     // Find the last underscore before "_FROM_" to correctly set the end position
     size_t lastUnderscoreBeforeFrom = filename.rfind('_', end - 1);
-    if (lastUnderscoreBeforeFrom != std::string::npos && lastUnderscoreBeforeFrom > start) {
+    if (lastUnderscoreBeforeFrom != std::string::npos && lastUnderscoreBeforeFrom > start)
+    {
         end = lastUnderscoreBeforeFrom;
     }
 
@@ -204,24 +215,23 @@ void moveFiles(const FileData &fileData, const std::string &directoryToMonitor)
     {
         std::filesystem::create_directory(subDir);
     }
-    
-    //22 std::cout << "Moving file from: " << fileData.filepath << " to: " << (subDir / fileData.filename) << std::endl;  // Debug statement
-    
+
+    // 22 std::cout << "[" << getCurrentTime() << "] " << "Moving file from: " << fileData.filepath << " to: " << (subDir / fileData.filename) << std::endl;  // Debug statement
+
     if (std::filesystem::exists(fileData.filepath))
     {
         std::filesystem::rename(fileData.filepath, subDir / fileData.filename);
     }
-    
+
     std::string txt_filename = fileData.filename.substr(0, fileData.filename.size() - 4) + ".txt";
-    
-    //22 std::cout << "Moving txt from: " << txt_filename << " to: " << (subDir / txt_filename) << std::endl;  // Debug statement
-    
+
+    // 22 std::cout << "[" << getCurrentTime() << "] " << "Moving txt from: " << txt_filename << " to: " << (subDir / txt_filename) << std::endl;  // Debug statement
+
     if (std::filesystem::exists(txt_filename))
     {
         std::filesystem::rename(txt_filename, subDir / txt_filename);
     }
 }
-
 
 // The refactored processFile function
 FileData processFile(const std::filesystem::path &path, const std::string &directoryToMonitor, const std::string &OPENAI_API_KEY)
@@ -229,13 +239,14 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
     try
     {
         FileData fileData;
-        std::string file_path = path.string(); 
-        //22 std::cout << "Processing file: " << file_path << std::endl;  // Debug statement
+        std::string file_path = path.string();
+        // 22 std::cout << "[" << getCurrentTime() << "] " << "Processing file: " << file_path << std::endl;  // Debug statement
         bool shouldSkip = skipFile(file_path);
         float duration = validateDuration(file_path, fileData);
-        //22 std::cout << "Should skip: " << shouldSkip << std::endl;  // Debug statement
-        shouldSkip = shouldSkip || (duration == 0.0);  // Update this line
-        if (shouldSkip) {
+        // 22 std::cout << "[" << getCurrentTime() << "] " << "Should skip: " << shouldSkip << std::endl;  // Debug statement
+        shouldSkip = shouldSkip || (duration == 0.0); // Update this line
+        if (shouldSkip)
+        {
             return FileData(); // Skip further processing
         }
         fileData.filepath = file_path;
@@ -249,7 +260,8 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
     }
     catch (const std::exception &e)
     {
-        std::cerr << "fileProcessor.cpp processFile Error: " << e.what() << std::endl;
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "fileProcessor.cpp processFile Error: " << e.what() << std::endl;
         return FileData();
     }
 }

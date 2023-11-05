@@ -9,6 +9,7 @@
 
 // Project-Specific Headers
 #include "curlHelper.h"
+#include "debugUtils.h"
 
 const std::string API_URL = "https://api.openai.com/v1/audio/transcriptions";
 const int MAX_RETRIES = 6;
@@ -75,7 +76,7 @@ std::string makeCurlRequest(CURL *curl, curl_mime *mime)
 
     if (res != CURLE_OK)
     {
-        throw std::runtime_error("curlHelper.cpp CURL request failed: " + std::string(curl_easy_strerror(res)));
+        throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp CURL request failed: " + std::string(curl_easy_strerror(res)));
     }
     return response;
 }
@@ -86,13 +87,13 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
     // Check if the file exists
     if (!std::filesystem::exists(file_path))
     {
-        throw std::runtime_error("curlHelper.cpp File does not exist: " + file_path);
+        throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp File does not exist: " + file_path);
     }
     // Check if the file is readable
     std::ifstream file(file_path);
     if (!file.good())
     {
-        throw std::runtime_error("curlHelper.cpp Cannot read file: " + file_path);
+        throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp Cannot read file: " + file_path);
     }
     file.close();
     std::deque<std::chrono::steady_clock::time_point> errorTimestamps;
@@ -119,7 +120,7 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
         CURL *curl = curl_easy_init();
         if (!curl)
         {
-            throw std::runtime_error("curlHelper.cpp CURL initialization failed");
+            throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp CURL initialization failed");
         }
 
         struct curl_slist *headers = NULL;
@@ -154,12 +155,12 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
         // Check if we've exceeded the error limit within the window
         if (errorTimestamps.size() >= MAX_RETRIES)
         {
-            throw std::runtime_error("curlHelper.cpp Exceeded maximum number of retries within time window");
+            throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp Exceeded maximum number of retries within time window");
         }
 
         // Optional: Add a delay before retrying
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 
-    throw std::runtime_error("curlHelper.cpp Exceeded maximum number of retries - check if OpenAI API is down - https://status.openai.com/");
+    throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp Exceeded maximum number of retries - check if OpenAI API is down - https://status.openai.com/");
 }
