@@ -1,6 +1,8 @@
 # C++ SDRTrunk Transcriber
-[![CodeFactor](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber/badge)](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber)
-## Overview
+[![CodeFactor](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber/badge)](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber)[![CodeQL Analysis](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/workflows/CodeQL%20Analysis/badge.svg)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions?query=workflow:"CodeQL+Analysis")
+[![GitHub tag](https://img.shields.io/github/tag/swiftraccoon/cpp-sdrtrunk-transcriber?include_prereleases=&sort=semver&color=blue)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/releases/)
+[![License](https://img.shields.io/badge/License-GPL3-blue)](#license)
+[![issues - cpp-sdrtrunk-transcriber](https://img.shields.io/github/issues/swiftraccoon/cpp-sdrtrunk-transcriber)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/issues)
 
 This project is designed to monitor a directory for SDRTrunk P25 MP3 files, categorize them based on the talkgroup ID, and create transcription files. It utilizes OpenAI's API for audio transcription and SQLite3 for database management.
 
