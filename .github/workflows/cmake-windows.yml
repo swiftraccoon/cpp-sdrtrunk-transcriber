@@ -19,6 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Clone yaml-cpp
+        run: git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
+
+      - name: Clone CLI11
+        run: git clone https://github.com/CLIUtils/CLI11.git external/CLI11
+
       - name: Set up vcpkg
         uses: lukka/run-vcpkg@v10
         with:
