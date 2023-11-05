@@ -38,7 +38,18 @@ This is not at all tested on Windows. Feel free to file issues for problems with
 - SQLite3
 - CURL
 - yaml-cpp
-- Google Test (for unit tests)
+
+### Fedora
+
+- `sudo dnf install libcurl-devel sqlite-devel pkg-config yaml-cpp-devel`
+
+### Ubuntu
+
+- `sudo apt-get install -y libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev`
+
+### Windows
+
+- Broken until [#17](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/issues/17) is resolved
 
 ## Installation
 
@@ -48,6 +59,10 @@ git clone https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber.git
 
 # Navigate to the project directory
 cd cpp-sdrtrunk-transcriber
+
+# `git clone` external repos that .gitsubmodules will not grab for you
+git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
+git clone https://github.com/CLIUtils/CLI11.git external/CLI11
 
 # Generate the Makefile
 cmake .
