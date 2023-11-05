@@ -32,7 +32,8 @@ jobs:
         git submodule update --init --recursive
         git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
         git clone https://github.com/CLIUtils/CLI11.git external/CLI11
-        cd ..
+        pwd
+        ls
         cp sample-config.yaml build/config.yaml
 
     - name: Configure CMake
