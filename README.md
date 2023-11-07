@@ -29,8 +29,7 @@ This is not at all tested on Windows. Feel free to file issues for problems with
 - Monitors a directory for new MP3 files
 - Transcribes audio using OpenAI's API
 - Manages transcriptions and metadata in an SQLite3 database
-- Provides a systemd service for automated running
-- Unit tests for key functionalities
+- (in progress) Provides a systemd service for automated running
 
 ## Dependencies
 
@@ -45,7 +44,7 @@ This is not at all tested on Windows. Feel free to file issues for problems with
 
 ### Ubuntu
 
-- `sudo apt-get install -y libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev`
+- `sudo apt-get install libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev`
 
 ### Windows
 
