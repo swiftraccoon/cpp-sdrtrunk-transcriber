@@ -40,3 +40,4 @@ CLI11/
 52199/
 config.yaml
 recordings.db
+.aider*
