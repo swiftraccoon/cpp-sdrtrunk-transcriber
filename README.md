@@ -1,5 +1,5 @@
 # C++ SDRTrunk Transcriber
-[![CodeFactor](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber/badge)](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber)[![CodeQL Analysis](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/workflows/CodeQL%20Analysis/badge.svg)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions?query=workflow:"CodeQL+Analysis")[![CMake Ubuntu](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions/workflows/cmake-ubuntu.yml/badge.svg)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions/workflows/cmake-ubuntu.yml)[![CMake Windows](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions/workflows/cmake-windows.yml/badge.svg)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions/workflows/cmake-windows.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber/badge)](https://www.codefactor.io/repository/github/swiftraccoon/cpp-sdrtrunk-transcriber)[![Ubuntu CodeQL](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions/workflows/ubuntu-codeql.yml/badge.svg)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions/workflows/ubuntu-codeql.yml)[![CMake Ubuntu](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions/workflows/cmake-ubuntu.yml/badge.svg)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions/workflows/cmake-ubuntu.yml)[![CMake Windows](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions/workflows/cmake-windows.yml/badge.svg)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/actions/workflows/cmake-windows.yml)
 
 [![GitHub tag](https://img.shields.io/github/tag/swiftraccoon/cpp-sdrtrunk-transcriber?include_prereleases=&sort=semver&color=blue)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/releases/)
 [![License](https://img.shields.io/badge/License-GPL3-blue)](#license)
@@ -29,8 +29,7 @@ This is not at all tested on Windows. Feel free to file issues for problems with
 - Monitors a directory for new MP3 files
 - Transcribes audio using OpenAI's API
 - Manages transcriptions and metadata in an SQLite3 database
-- Provides a systemd service for automated running
-- Unit tests for key functionalities
+- (in progress) Provides a systemd service for automated running
 
 ## Dependencies
 
@@ -45,7 +44,7 @@ This is not at all tested on Windows. Feel free to file issues for problems with
 
 ### Ubuntu
 
-- `sudo apt-get install -y libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev`
+- `sudo apt-get install libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev`
 
 ### Windows
 
