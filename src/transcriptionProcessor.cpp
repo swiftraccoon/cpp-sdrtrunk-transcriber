@@ -62,7 +62,8 @@ std::string generateV2Transcription(const std::string &transcription, int talkgr
     if (actualTranscription.empty())
     {
         std::cerr << "[" << getCurrentTime() << "] "
-                  << "transcriptionProcessor.cpp Could not extract actual transcription from JSON-like string." << std::endl;
+                  << "transcriptionProcessor.cpp Could not extract actual transcription from JSON-like string. Received transcription string: '"
+                  << transcription << "'" << std::endl;
         return {};
     }
 
