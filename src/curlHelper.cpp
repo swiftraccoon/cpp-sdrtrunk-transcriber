@@ -176,6 +176,6 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
         exit(EXIT_FAILURE);
     }
 
-    // If rate limit reached without majority errors, just return an error message
+    // If unable to transcribe the file after MAX_RETRIES, return an error message
     return "UNABLE_TO_TRANSCRIBE_CHECK_FILE";
 }
