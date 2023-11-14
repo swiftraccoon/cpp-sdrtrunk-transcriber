@@ -13,7 +13,6 @@
 #include <thread>
 #include <vector>
 #include <sys/types.h>
-#include <sys/wait.h>
 
 #ifdef _WIN32
 #include <windows.h>
