@@ -86,7 +86,11 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
     std::ifstream file(filePath);
     if (!file.is_open())
     {
-        // 22 std::cerr << "[" << getCurrentTime() << "] " << "transcriptionProcessor.cpp readMappingFile Could not open file: " << filePath << std::endl;
+        if (ConfigSingleton::getInstance().isDebugTranscriptionProcessor())
+        {
+            std::cerr << "[" << getCurrentTime() << "] "
+                      << "transcriptionProcessor.cpp readMappingFile Could not open file: " << filePath << std::endl;
+        }
         return mapping;
     }
 
@@ -94,8 +98,11 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
     {
         nlohmann::json j;
         file >> j;
-        // 22 std::cerr << "[" << getCurrentTime() << "] "
-        // 22           << "transcriptionProcessor.cpp readMappingFile JSON: " << j << std::endl;
+        if (ConfigSingleton::getInstance().isDebugTranscriptionProcessor())
+        {
+            std::cerr << "[" << getCurrentTime() << "] "
+                      << "transcriptionProcessor.cpp readMappingFile JSON: " << j << std::endl;
+        }
         for (const auto &[key, value] : j.items())
         {
             if (value.is_string())
@@ -146,7 +153,11 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
 
 std::string extractActualTranscription(const std::string &transcription)
 {
-    // 22 std::cerr << "[" << getCurrentTime() << "] " << "transcriptionProcessor.cpp extractActualTranscription Received transcription string: " << transcription << std::endl;
+    if (ConfigSingleton::getInstance().isDebugTranscriptionProcessor())
+    {
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "transcriptionProcessor.cpp extractActualTranscription Received transcription string: " << transcription << std::endl;
+    }
     static const std::regex text_regex("\"text\":\"([^\"]+)\"");
     std::smatch match;
     return std::regex_search(transcription, match, text_regex) && match.size() > 1 ? match.str(1) : "";

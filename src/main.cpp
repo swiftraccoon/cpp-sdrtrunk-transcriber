@@ -62,15 +62,24 @@ void processDirectory(const std::string &directoryToMonitor, const YAML::Node &c
         {
             if (entry.path().extension() == MP3_EXTENSION)
             {
-                // 22 std::cout << "[" << getCurrentTime() << "] " << "main.cpp processDirectory Processing directory: " << directoryToMonitor << std::endl;
-                // 22 std::cout << "[" << getCurrentTime() << "] " << "main.cpp processDirectory Checking file: " << entry.path() << std::endl;
+                if (ConfigSingleton::getInstance().isDebugMain())
+                {
+                    std::cout << "[" << getCurrentTime() << "] "
+                              << "main.cpp processDirectory Processing directory: " << directoryToMonitor << std::endl;
+                    std::cout << "[" << getCurrentTime() << "] "
+                              << "main.cpp processDirectory Checking file: " << entry.path() << std::endl;
+                }
                 try
                 {
                     fileData = processFile(entry.path(), directoryToMonitor, OPENAI_API_KEY);
                 }
                 catch (const std::runtime_error &e)
                 {
-                    // 22 std::cerr << "[" << getCurrentTime() << "] " << "main.cpp processDirectory Skipping file: " << e.what() << std::endl;
+                    if (ConfigSingleton::getInstance().isDebugMain())
+                    {
+                        std::cerr << "[" << getCurrentTime() << "] "
+                                  << "main.cpp processDirectory Skipping file: " << e.what() << std::endl;
+                    }
                     continue; // Move on to the next file
                 }
 

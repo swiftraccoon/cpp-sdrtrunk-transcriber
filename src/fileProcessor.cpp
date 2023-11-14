@@ -218,8 +218,11 @@ void moveFiles(const FileData &fileData, const std::string &directoryToMonitor)
     {
         std::filesystem::create_directory(subDir);
     }
-
-    // 22 std::cout << "[" << getCurrentTime() << "] " << "fileProcessor.cpp moveFiles Moving file from: " << fileData.filepath << " to: " << (subDir / fileData.filename) << std::endl;  // Debug statement
+    if (ConfigSingleton::getInstance().isDebugFileProcessor())
+    {
+        std::cout << "[" << getCurrentTime() << "] "
+                  << "fileProcessor.cpp moveFiles Moving file from: " << fileData.filepath << " to: " << (subDir / fileData.filename) << std::endl;
+    }
 
     if (std::filesystem::exists(fileData.filepath))
     {
@@ -227,8 +230,11 @@ void moveFiles(const FileData &fileData, const std::string &directoryToMonitor)
     }
 
     std::string txt_filename = fileData.filename.substr(0, fileData.filename.size() - 4) + ".txt";
-
-    // 22 std::cout << "[" << getCurrentTime() << "] " << "fileProcessor.cpp moveFiles Moving txt from: " << txt_filename << " to: " << (subDir / txt_filename) << std::endl;  // Debug statement
+    if (ConfigSingleton::getInstance().isDebugFileProcessor())
+    {
+        std::cout << "[" << getCurrentTime() << "] "
+                  << "fileProcessor.cpp moveFiles Moving txt from: " << txt_filename << " to: " << (subDir / txt_filename) << std::endl;
+    }
 
     if (std::filesystem::exists(txt_filename))
     {
@@ -243,11 +249,19 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
     {
         FileData fileData;
         std::string file_path = path.string();
-        // 22 std::cout << "[" << getCurrentTime() << "] " << "fileProcessor.cpp processFile Processing file: " << file_path << std::endl;  // Debug statement
+        if (ConfigSingleton::getInstance().isDebugFileProcessor())
+        {
+            std::cout << "[" << getCurrentTime() << "] "
+                      << "fileProcessor.cpp processFile Processing file: " << file_path << std::endl;
+        }
         bool shouldSkip = skipFile(file_path);
         float duration = validateDuration(file_path, fileData);
-        // 22 std::cout << "[" << getCurrentTime() << "] " << "fileProcessor.cpp processFile Should skip: " << shouldSkip << std::endl;  // Debug statement
-        shouldSkip = shouldSkip || (duration == 0.0); // Update this line
+        if (ConfigSingleton::getInstance().isDebugFileProcessor())
+        {
+            std::cout << "[" << getCurrentTime() << "] "
+                      << "fileProcessor.cpp processFile Should skip: " << shouldSkip << std::endl;
+        }
+        shouldSkip = shouldSkip || (duration == 0.0);
         if (shouldSkip)
         {
             return FileData(); // Skip further processing

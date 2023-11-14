@@ -24,6 +24,11 @@ void ConfigSingleton::initialize(const YAML::Node &config)
     errorWindowSeconds = config["ERROR_WINDOW_SECONDS"].as<int>();
     rateLimitWindowSeconds = config["RATE_LIMIT_WINDOW_SECONDS"].as<int>();
     minDurationSeconds = config["MIN_DURATION_SECONDS"].as<int>();
+    debugCurlHelper = config["DEBUG_CURL_HELPER"].as<bool>(false);
+    debugDatabaseManager = config["DEBUG_DATABASE_MANAGER"].as<bool>(false);
+    debugFileProcessor = config["DEBUG_FILE_PROCESSOR"].as<bool>(false);
+    debugMain = config["DEBUG_MAIN"].as<bool>(false);
+    debugTranscriptionProcessor = config["DEBUG_TRANSCRIPTION_PROCESSOR"].as<bool>(false);
 }
 
 std::string ConfigSingleton::getTensignFile() const { return tensignFile; }
@@ -41,3 +46,8 @@ int ConfigSingleton::getMaxRetries() const { return maxRetries; }
 int ConfigSingleton::getMaxRequestsPerMinute() const { return maxRequestsPerMinute; }
 int ConfigSingleton::getErrorWindowSeconds() const { return errorWindowSeconds; }
 int ConfigSingleton::getRateLimitWindowSeconds() const { return rateLimitWindowSeconds; }
+bool ConfigSingleton::isDebugCurlHelper() const { return debugCurlHelper; }
+bool ConfigSingleton::isDebugDatabaseManager() const { return debugDatabaseManager; }
+bool ConfigSingleton::isDebugFileProcessor() const { return debugFileProcessor; }
+bool ConfigSingleton::isDebugMain() const { return debugMain; }
+bool ConfigSingleton::isDebugTranscriptionProcessor() const { return debugTranscriptionProcessor; }

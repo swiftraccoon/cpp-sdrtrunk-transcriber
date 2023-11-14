@@ -4,7 +4,8 @@
 # used in main.cpp
 DirectoryToMonitor: "/usr/src/app/cpp-sdrtrunk-transcriber/"
 
-# Number of seconds to wait before looping
+# Number of seconds we should wait before we check the directory after processing
+# the files that were in it. This is to prevent the program from using too much CPU.
 # used in main.cpp
 LoopWaitSeconds: 60
 
@@ -59,3 +60,15 @@ NCSHP_CALLSIGNS_FILE: "/usr/src/app/cpp-sdrtrunk-transcriber/howToFormatYourJSON
 # JSON object files for signals
 SIGNALS_FILE: "/usr/src/app/cpp-sdrtrunk-transcriber/howToFormatYourJSON.json"
 NCSHP_SIGNALS_FILE: "/usr/src/app/cpp-sdrtrunk-transcriber/howToFormatYourJSON.json"
+
+
+#############
+# DEBUGGING #
+#############
+# If you want to see verbose output for a specific component, set it to true here.
+# Warning: This will generate a lot of output!
+DEBUG_CURL_HELPER: false
+DEBUG_DATABASE_MANAGER: false
+DEBUG_FILE_PROCESSOR: false
+DEBUG_MAIN: false
+DEBUG_TRANSCRIPTION_PROCESSOR: false

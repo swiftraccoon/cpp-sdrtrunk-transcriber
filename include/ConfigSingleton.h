@@ -28,6 +28,11 @@ public:
     int getErrorWindowSeconds() const;
     int getRateLimitWindowSeconds() const;
     int getMinDurationSeconds() const;
+    bool isDebugCurlHelper() const;
+    bool isDebugDatabaseManager() const;
+    bool isDebugFileProcessor() const;
+    bool isDebugMain() const;
+    bool isDebugTranscriptionProcessor() const;
 
 private:
     ConfigSingleton() = default;
@@ -50,6 +55,11 @@ private:
     int errorWindowSeconds;
     int rateLimitWindowSeconds;
     int minDurationSeconds;
+    bool debugCurlHelper;
+    bool debugDatabaseManager;
+    bool debugFileProcessor;
+    bool debugMain;
+    bool debugTranscriptionProcessor;
 };
 
 #endif // CONFIG_SINGLETON_H
