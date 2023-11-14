@@ -23,58 +23,20 @@ void ConfigSingleton::initialize(const YAML::Node &config)
     maxRequestsPerMinute = config["MAX_REQUESTS_PER_MINUTE"].as<int>();
     errorWindowSeconds = config["ERROR_WINDOW_SECONDS"].as<int>();
     rateLimitWindowSeconds = config["RATE_LIMIT_WINDOW_SECONDS"].as<int>();
+    minDurationSeconds = config["MIN_DURATION_SECONDS"].as<int>();
 }
 
-std::string ConfigSingleton::getTensignFile() const
-{
-    return tensignFile;
-}
-
-std::string ConfigSingleton::getCallsignFile() const
-{
-    return callsignFile;
-}
-
-std::string ConfigSingleton::getSignalFile() const
-{
-    return signalFile;
-}
-
-std::string ConfigSingleton::getNCSHP_TensignFile() const
-{
-    return NCSHP_tensignFile;
-}
-
-std::string ConfigSingleton::getNCSHP_CallsignFile() const
-{
-    return NCSHP_callsignFile;
-}
-
-std::string ConfigSingleton::getNCSHP_SignalFile() const
-{
-    return NCSHP_signalFile;
-}
-
-std::string ConfigSingleton::getDatabasePath() const
-{
-    return databasePath;
-}
-
-std::string ConfigSingleton::getDirectoryToMonitor() const
-{
-    return directoryToMonitor;
-}
-
-std::string ConfigSingleton::getOpenAIAPIKey() const
-{
-    return openaiAPIKey;
-}
-
-int ConfigSingleton::getLoopWaitSeconds() const
-{
-    return loopWaitSeconds;
-}
-
+std::string ConfigSingleton::getTensignFile() const { return tensignFile; }
+std::string ConfigSingleton::getCallsignFile() const { return callsignFile; }
+std::string ConfigSingleton::getSignalFile() const { return signalFile; }
+std::string ConfigSingleton::getNCSHP_TensignFile() const { return NCSHP_tensignFile; }
+std::string ConfigSingleton::getNCSHP_CallsignFile() const { return NCSHP_callsignFile; }
+std::string ConfigSingleton::getNCSHP_SignalFile() const { return NCSHP_signalFile; }
+std::string ConfigSingleton::getDatabasePath() const { return databasePath; }
+std::string ConfigSingleton::getDirectoryToMonitor() const { return directoryToMonitor; }
+std::string ConfigSingleton::getOpenAIAPIKey() const { return openaiAPIKey; }
+int ConfigSingleton::getLoopWaitSeconds() const { return loopWaitSeconds; }
+int ConfigSingleton::getMinDurationSeconds() const { return minDurationSeconds; }
 int ConfigSingleton::getMaxRetries() const { return maxRetries; }
 int ConfigSingleton::getMaxRequestsPerMinute() const { return maxRequestsPerMinute; }
 int ConfigSingleton::getErrorWindowSeconds() const { return errorWindowSeconds; }

@@ -140,7 +140,10 @@ float validateDuration(const std::string &file_path, FileData &fileData)
     std::string durationStr = getMP3Duration(file_path);
     float duration = std::stof(durationStr);
     fileData.duration = durationStr; // Set the duration in FileData
-    if (duration < 9.0)
+
+    float minDuration = ConfigSingleton::getInstance().getMinDurationSeconds();
+    
+    if (duration < minDuration)
     {
         std::filesystem::remove(file_path);
         return 0.0;

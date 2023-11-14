@@ -11,6 +11,10 @@ LoopWaitSeconds: 60
 # OpenAI API Key for transcription
 OPENAI_API_KEY: "YOUR_API_KEY"
 
+# Minimum duration in seconds for an MP3 file to be processed
+# used in fileProcessor.cpp
+MIN_DURATION_SECONDS: 9
+
 # MAX_RETRIES: The maximum number of times the program will attempt to reprocess a file 
 # before giving up if it encounters errors or invalid responses.
 # used in curlHelper.cpp

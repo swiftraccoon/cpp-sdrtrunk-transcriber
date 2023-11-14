@@ -27,6 +27,7 @@ public:
     int getMaxRequestsPerMinute() const;
     int getErrorWindowSeconds() const;
     int getRateLimitWindowSeconds() const;
+    int getMinDurationSeconds() const;
 
 private:
     ConfigSingleton() = default;
@@ -48,6 +49,7 @@ private:
     int maxRequestsPerMinute;
     int errorWindowSeconds;
     int rateLimitWindowSeconds;
+    int minDurationSeconds;
 };
 
 #endif // CONFIG_SINGLETON_H
