@@ -16,7 +16,7 @@
 #include "../include/debugUtils.h"
 #include "../include/ConfigSingleton.h"
 
-ConfigSingleton& config = ConfigSingleton::getInstance();
+ConfigSingleton &config = ConfigSingleton::getInstance();
 int maxRetries = config.getMaxRetries();
 int maxRequestsPerMinute = config.getMaxRequestsPerMinute();
 std::chrono::seconds errorWindow(config.getErrorWindowSeconds());
@@ -113,12 +113,14 @@ bool containsApiError(const std::string &response)
 // Check file existence and readability
 void checkFileValidity(const std::string &file_path)
 {
+    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Checking if file exists." << std::endl;
     if (!std::filesystem::exists(file_path))
     {
         throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp File does not exist: " + file_path);
     }
 
     std::ifstream file(file_path);
+    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Checking if file is readable." << std::endl;
     if (!file.good())
     {
         throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp Cannot read file: " + file_path);
@@ -146,6 +148,7 @@ void handleRateLimiting()
     if (requestTimestamps.size() >= maxRequestsPerMinute)
     {
         auto sleep_duration = rateLimitWindow - (now - requestTimestamps.front());
+        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Rate limit reached, sleeping for " << sleep_duration.count() << " seconds." << std::endl;
         std::this_thread::sleep_for(sleep_duration);
     }
 }
@@ -153,10 +156,12 @@ void handleRateLimiting()
 // Transcribe audio using CURL
 std::string curl_transcribe_audio(const std::string &file_path, const std::string &OPENAI_API_KEY)
 {
+    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio called with file path: " << file_path << std::endl;
     checkFileValidity(file_path);
-
+    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Entering retry loop." << std::endl;
     for (int retryCount = 0; retryCount < maxRetries; ++retryCount)
     {
+        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp attempt " << (retryCount + 1) << " of " << maxRetries << std::endl;
         handleRateLimiting();
 
         CURL *curl = curl_easy_init();
@@ -174,18 +179,22 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
         curl_easy_setopt(curl, CURLOPT_URL, API_URL.c_str());
         curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
 
+        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Making API call." << std::endl;
         std::string response = makeCurlRequest(curl, mime);
+        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Received response: " << response << std::endl;
 
         curl_easy_cleanup(curl);
         curl_mime_free(mime);
 
         if (!containsApiError(response) && isValidResponse(response))
         {
+            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Valid response received." << std::endl;
             return response; // Success, return the response
         }
 
         if (containsApiError(response))
         {
+            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp API error detected in response." << std::endl;
             apiErrorCount++;
             auto now = std::chrono::steady_clock::now();
             errorTimestamps.push_back(now);
@@ -196,9 +205,9 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
 
     if (apiErrorCount > maxRequestsPerMinute / 4)
     {
-        std::cerr << "[" << getCurrentTime() << "] Majority of retries failed due to API errors." << std::endl;
+        std::cerr << "[" << getCurrentTime() << "] curlHelper.cpp Majority of retries failed due to API errors." << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    return "UNABLE_TO_TRANSCRIBE_CHECK_FILE";
+    return "curlHelper.cpp_UNABLE_TO_TRANSCRIBE_CHECK_FILE";
 }
