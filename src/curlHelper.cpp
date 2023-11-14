@@ -17,10 +17,6 @@
 #include "../include/ConfigSingleton.h"
 
 ConfigSingleton &config = ConfigSingleton::getInstance();
-int maxRetries = config.getMaxRetries();
-int maxRequestsPerMinute = config.getMaxRequestsPerMinute();
-std::chrono::seconds errorWindow(config.getErrorWindowSeconds());
-std::chrono::seconds rateLimitWindow(config.getRateLimitWindowSeconds());
 const std::string API_URL = "https://api.openai.com/v1/audio/transcriptions";
 std::deque<std::chrono::steady_clock::time_point> requestTimestamps;
 std::deque<std::chrono::steady_clock::time_point> errorTimestamps;
@@ -79,7 +75,7 @@ std::string makeCurlRequest(CURL *curl, curl_mime *mime)
 
     if (res != CURLE_OK)
     {
-        throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp CURL request failed: " + std::string(curl_easy_strerror(res)));
+        throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp makeCurlRequest CURL request failed: " + std::string(curl_easy_strerror(res)));
     }
     return response;
 }
@@ -87,7 +83,7 @@ std::string makeCurlRequest(CURL *curl, curl_mime *mime)
 // Check if the response contains a valid transcription and no halucinations
 bool isValidResponse(const std::string &response)
 {
-    return !response.empty() && response != "Thanks for watching!";
+    return !response.empty() && response != "Thank you for watching";
 }
 
 // List of API error messages to check against
@@ -133,9 +129,11 @@ void checkFileValidity(const std::string &file_path)
 // Handle rate limiting
 void handleRateLimiting()
 {
+    std::chrono::seconds rateLimitWindow(config.getRateLimitWindowSeconds());
+    int maxRequestsPerMinute = config.getMaxRequestsPerMinute();
     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Entered handleRateLimiting" << std::endl;
     auto now = std::chrono::steady_clock::now();
-
+    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp handleRateLimiting rateLimitWindow: " << rateLimitWindow.count() << " seconds" << std::endl;
     // Remove timestamps outside the 1-minute window
     while (!requestTimestamps.empty() && (now - requestTimestamps.front() > rateLimitWindow))
     {
@@ -148,6 +146,7 @@ void handleRateLimiting()
     }
 
     // Check if we've exceeded the rate limit
+    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp handleRateLimiting maxRequestsPerMinute: " << maxRequestsPerMinute << std::endl;
     if (requestTimestamps.size() >= maxRequestsPerMinute)
     {
         auto sleep_duration = rateLimitWindow - (now - requestTimestamps.front());
@@ -159,6 +158,9 @@ void handleRateLimiting()
 // Transcribe audio using CURL
 std::string curl_transcribe_audio(const std::string &file_path, const std::string &OPENAI_API_KEY)
 {
+    int maxRetries = config.getMaxRetries();
+    int maxRequestsPerMinute = config.getMaxRequestsPerMinute();
+    // std::chrono::seconds errorWindow(config.getErrorWindowSeconds());
     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio called with file path: " << file_path << std::endl;
     checkFileValidity(file_path);
     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio Entering retry loop." << std::endl;
@@ -166,6 +168,7 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
     try
     {
         std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio maxRetries: " << maxRetries << std::endl;
+        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio maxRequestsPerMinute: " << maxRequestsPerMinute << std::endl;
         for (int retryCount = 0; retryCount < maxRetries; ++retryCount)
         {
             std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio attempt " << (retryCount + 1) << " of " << maxRetries << std::endl;
@@ -187,22 +190,22 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
             curl_easy_setopt(curl, CURLOPT_URL, API_URL.c_str());
             curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
 
-            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Making API call." << std::endl;
+            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio Making API call." << std::endl;
             std::string response = makeCurlRequest(curl, mime);
-            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Received response: " << response << std::endl;
+            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio Received response: " << response << std::endl;
 
             curl_easy_cleanup(curl);
             curl_mime_free(mime);
 
             if (!containsApiError(response) && isValidResponse(response))
             {
-                std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Valid response received." << std::endl;
+                std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio Valid response received." << std::endl;
                 return response; // Success, return the response
             }
 
             if (containsApiError(response))
             {
-                std::cout << "[" << getCurrentTime() << "] curlHelper.cpp API error detected in response." << std::endl;
+                std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio API error detected in response." << std::endl;
                 apiErrorCount++;
                 auto now = std::chrono::steady_clock::now();
                 errorTimestamps.push_back(now);
@@ -213,12 +216,12 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
     }
     catch (const std::exception &e)
     {
-        std::cerr << "[" << getCurrentTime() << "] curlHelper.cpp Exception caught in retry loop: " << e.what() << std::endl;
+        std::cerr << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio Exception caught in retry loop: " << e.what() << std::endl;
     }
 
     if (apiErrorCount > maxRequestsPerMinute / 4)
     {
-        std::cerr << "[" << getCurrentTime() << "] curlHelper.cpp Majority of retries failed due to API errors." << std::endl;
+        std::cerr << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio Majority of retries failed due to API errors." << std::endl;
         exit(EXIT_FAILURE);
     }
 
