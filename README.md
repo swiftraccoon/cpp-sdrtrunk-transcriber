@@ -48,7 +48,9 @@ This is not at all tested on Windows. Feel free to file issues for problems with
 
 ### Windows
 
-- Broken until [#17](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/issues/17) is resolved
+- Refer to the [Windows CMake](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/blob/main/.github/workflows/cmake-windows.yml)
+
+(Please feel free to update this with better steps for Windows users. I do not use Windows so I'm not sure what's necessary.)
 
 ## Installation
 
