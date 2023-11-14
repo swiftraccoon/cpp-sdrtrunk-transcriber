@@ -159,48 +159,55 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio called with file path: " << file_path << std::endl;
     checkFileValidity(file_path);
     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Entering retry loop." << std::endl;
-    for (int retryCount = 0; retryCount < maxRetries; ++retryCount)
+    try
     {
-        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp attempt " << (retryCount + 1) << " of " << maxRetries << std::endl;
-        handleRateLimiting();
-
-        CURL *curl = curl_easy_init();
-        if (!curl)
+        for (int retryCount = 0; retryCount < maxRetries; ++retryCount)
         {
-            throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp CURL initialization failed");
+            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp attempt " << (retryCount + 1) << " of " << maxRetries << std::endl;
+            handleRateLimiting();
+
+            CURL *curl = curl_easy_init();
+            if (!curl)
+            {
+                throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp CURL initialization failed");
+            }
+
+            struct curl_slist *headers = NULL;
+            setupCurlHeaders(curl, headers, OPENAI_API_KEY);
+
+            curl_mime *mime;
+            setupCurlPostFields(curl, mime, file_path);
+
+            curl_easy_setopt(curl, CURLOPT_URL, API_URL.c_str());
+            curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
+
+            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Making API call." << std::endl;
+            std::string response = makeCurlRequest(curl, mime);
+            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Received response: " << response << std::endl;
+
+            curl_easy_cleanup(curl);
+            curl_mime_free(mime);
+
+            if (!containsApiError(response) && isValidResponse(response))
+            {
+                std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Valid response received." << std::endl;
+                return response; // Success, return the response
+            }
+
+            if (containsApiError(response))
+            {
+                std::cout << "[" << getCurrentTime() << "] curlHelper.cpp API error detected in response." << std::endl;
+                apiErrorCount++;
+                auto now = std::chrono::steady_clock::now();
+                errorTimestamps.push_back(now);
+            }
+
+            std::this_thread::sleep_for(std::chrono::seconds(2));
         }
-
-        struct curl_slist *headers = NULL;
-        setupCurlHeaders(curl, headers, OPENAI_API_KEY);
-
-        curl_mime *mime;
-        setupCurlPostFields(curl, mime, file_path);
-
-        curl_easy_setopt(curl, CURLOPT_URL, API_URL.c_str());
-        curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
-
-        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Making API call." << std::endl;
-        std::string response = makeCurlRequest(curl, mime);
-        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Received response: " << response << std::endl;
-
-        curl_easy_cleanup(curl);
-        curl_mime_free(mime);
-
-        if (!containsApiError(response) && isValidResponse(response))
-        {
-            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Valid response received." << std::endl;
-            return response; // Success, return the response
-        }
-
-        if (containsApiError(response))
-        {
-            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp API error detected in response." << std::endl;
-            apiErrorCount++;
-            auto now = std::chrono::steady_clock::now();
-            errorTimestamps.push_back(now);
-        }
-
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "[" << getCurrentTime() << "] curlHelper.cpp Exception caught in retry loop: " << e.what() << std::endl;
     }
 
     if (apiErrorCount > maxRequestsPerMinute / 4)
