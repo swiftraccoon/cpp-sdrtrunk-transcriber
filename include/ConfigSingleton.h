@@ -23,6 +23,10 @@ public:
     std::string getDatabasePath() const;
     std::string getDirectoryToMonitor() const;
     int getLoopWaitSeconds() const;
+    int getMaxRetries() const;
+    int getMaxRequestsPerMinute() const;
+    int getErrorWindowSeconds() const;
+    int getRateLimitWindowSeconds() const;
 
 private:
     ConfigSingleton() = default;
@@ -40,6 +44,10 @@ private:
     std::string databasePath;
     std::string directoryToMonitor;
     int loopWaitSeconds;
+    int maxRetries;
+    int maxRequestsPerMinute;
+    int errorWindowSeconds;
+    int rateLimitWindowSeconds;
 };
 
 #endif // CONFIG_SINGLETON_H

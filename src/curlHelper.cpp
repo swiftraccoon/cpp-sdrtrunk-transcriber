@@ -14,12 +14,14 @@
 // Project-Specific Headers
 #include "../include/curlHelper.h"
 #include "../include/debugUtils.h"
+#include "../include/ConfigSingleton.h"
 
+ConfigSingleton& config = ConfigSingleton::getInstance();
+int maxRetries = config.getMaxRetries();
+int maxRequestsPerMinute = config.getMaxRequestsPerMinute();
+std::chrono::seconds errorWindow(config.getErrorWindowSeconds());
+std::chrono::seconds rateLimitWindow(config.getRateLimitWindowSeconds());
 const std::string API_URL = "https://api.openai.com/v1/audio/transcriptions";
-const int MAX_RETRIES = 3;
-const int MAX_REQUESTS_PER_MINUTE = 50;
-const std::chrono::seconds ERROR_WINDOW(300);
-const std::chrono::seconds RATE_LIMIT_WINDOW(60);
 std::deque<std::chrono::steady_clock::time_point> requestTimestamps;
 std::deque<std::chrono::steady_clock::time_point> errorTimestamps;
 int apiErrorCount = 0;
@@ -130,7 +132,7 @@ void handleRateLimiting()
     auto now = std::chrono::steady_clock::now();
 
     // Remove timestamps outside the 1-minute window
-    while (!requestTimestamps.empty() && (now - requestTimestamps.front() > RATE_LIMIT_WINDOW))
+    while (!requestTimestamps.empty() && (now - requestTimestamps.front() > rateLimitWindow))
     {
         requestTimestamps.pop_front();
         if (!errorTimestamps.empty())
@@ -141,9 +143,9 @@ void handleRateLimiting()
     }
 
     // Check if we've exceeded the rate limit
-    if (requestTimestamps.size() >= MAX_REQUESTS_PER_MINUTE)
+    if (requestTimestamps.size() >= maxRequestsPerMinute)
     {
-        auto sleep_duration = RATE_LIMIT_WINDOW - (now - requestTimestamps.front());
+        auto sleep_duration = rateLimitWindow - (now - requestTimestamps.front());
         std::this_thread::sleep_for(sleep_duration);
     }
 }
@@ -153,7 +155,7 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
 {
     checkFileValidity(file_path);
 
-    for (int retryCount = 0; retryCount < MAX_RETRIES; ++retryCount)
+    for (int retryCount = 0; retryCount < maxRetries; ++retryCount)
     {
         handleRateLimiting();
 
@@ -189,10 +191,10 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
             errorTimestamps.push_back(now);
         }
 
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 
-    if (apiErrorCount > MAX_REQUESTS_PER_MINUTE / 4)
+    if (apiErrorCount > maxRequestsPerMinute / 4)
     {
         std::cerr << "[" << getCurrentTime() << "] Majority of retries failed due to API errors." << std::endl;
         exit(EXIT_FAILURE);

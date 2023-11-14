@@ -19,6 +19,10 @@ void ConfigSingleton::initialize(const YAML::Node &config)
     directoryToMonitor = config["DirectoryToMonitor"].as<std::string>();
     loopWaitSeconds = config["LoopWaitSeconds"].as<int>();
     openaiAPIKey = config["OPENAI_API_KEY"].as<std::string>();
+    maxRetries = config["MAX_RETRIES"].as<int>();
+    maxRequestsPerMinute = config["MAX_REQUESTS_PER_MINUTE"].as<int>();
+    errorWindowSeconds = config["ERROR_WINDOW_SECONDS"].as<int>();
+    rateLimitWindowSeconds = config["RATE_LIMIT_WINDOW_SECONDS"].as<int>();
 }
 
 std::string ConfigSingleton::getTensignFile() const
@@ -70,3 +74,8 @@ int ConfigSingleton::getLoopWaitSeconds() const
 {
     return loopWaitSeconds;
 }
+
+int ConfigSingleton::getMaxRetries() const { return maxRetries; }
+int ConfigSingleton::getMaxRequestsPerMinute() const { return maxRequestsPerMinute; }
+int ConfigSingleton::getErrorWindowSeconds() const { return errorWindowSeconds; }
+int ConfigSingleton::getRateLimitWindowSeconds() const { return rateLimitWindowSeconds; }

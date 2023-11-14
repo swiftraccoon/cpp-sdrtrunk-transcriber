@@ -1,13 +1,37 @@
 # Configuration for C++ SDRTrunk Transcriber
 
 # Directory to monitor for new MP3 files
+# used in main.cpp
 DirectoryToMonitor: "/usr/src/app/cpp-sdrtrunk-transcriber/"
 
 # Number of seconds to wait before looping
+# used in main.cpp
 LoopWaitSeconds: 60
 
 # OpenAI API Key for transcription
-OPENAI_API_KEY: "YOUR API KEY"
+OPENAI_API_KEY: "YOUR_API_KEY"
+
+# MAX_RETRIES: The maximum number of times the program will attempt to reprocess a file 
+# before giving up if it encounters errors or invalid responses.
+# used in curlHelper.cpp
+MAX_RETRIES: 3
+
+# MAX_REQUESTS_PER_MINUTE: The maximum number of requests that can be sent to the API 
+# within RATE_LIMIT_WINDOW_SECONDS. This is to comply with the API's rate limiting policies.
+# used in curlHelper.cpp
+MAX_REQUESTS_PER_MINUTE: 50
+
+# ERROR_WINDOW_SECONDS: The time window in seconds for tracking API errors. 
+# If the number of errors exceeds a 25% threshold within this window, 
+# the program will exit.
+# used in curlHelper.cpp
+ERROR_WINDOW_SECONDS: 300
+
+# RATE_LIMIT_WINDOW_SECONDS: The time window in seconds for enforcing the rate limit. 
+# The program tracks the number of requests made in this period and ensures 
+# it doesn't exceed the maximum allowed requests per minute.
+# used in curlHelper.cpp
+RATE_LIMIT_WINDOW_SECONDS: 60
 
 # TODO:
 # utilize the SDRTrunk playlist XML to convert 
