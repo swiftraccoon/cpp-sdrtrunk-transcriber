@@ -98,11 +98,11 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
     {
         nlohmann::json j;
         file >> j;
-        if (ConfigSingleton::getInstance().isDebugTranscriptionProcessor())
-        {
-            std::cerr << "[" << getCurrentTime() << "] "
-                      << "transcriptionProcessor.cpp readMappingFile JSON: " << j << std::endl;
-        }
+        // if (ConfigSingleton::getInstance().isDebugTranscriptionProcessor())
+        // {
+        //     std::cerr << "[" << getCurrentTime() << "] "
+        //               << "transcriptionProcessor.cpp readMappingFile JSON: " << j << std::endl;
+        // }
         for (const auto &[key, value] : j.items())
         {
             if (value.is_string())

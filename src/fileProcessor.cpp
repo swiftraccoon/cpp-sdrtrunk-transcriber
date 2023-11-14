@@ -72,8 +72,9 @@ void find_and_move_mp3_without_txt(const std::string &directoryToMonitor)
     }
 }
 
-std::string getMP3Duration(const std::string &mp3FilePath) {
-    #ifdef _WIN32
+std::string getMP3Duration(const std::string &mp3FilePath)
+{
+#ifdef _WIN32
     // Windows-specific implementation
     // Command to execute
     std::string command = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"" + mp3FilePath + "\"";
@@ -88,13 +89,15 @@ std::string getMP3Duration(const std::string &mp3FilePath) {
     HANDLE g_hChildStd_OUT_Wr = NULL;
 
     // Create a pipe for the child process's STDOUT
-    if (!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0)) {
+    if (!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0))
+    {
         std::cerr << "StdoutRd CreatePipe failed\n";
         return "";
     }
 
     // Ensure the read handle to the pipe for STDOUT is not inherited
-    if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0)) {
+    if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0))
+    {
         std::cerr << "Stdout SetHandleInformation failed\n";
         return "";
     }
@@ -111,25 +114,28 @@ std::string getMP3Duration(const std::string &mp3FilePath) {
     siStartInfo.hStdOutput = g_hChildStd_OUT_Wr;
     siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
-    bSuccess = CreateProcess(NULL, 
-        const_cast<char *>(command.c_str()), // command line 
-        NULL,          // process security attributes 
-        NULL,          // primary thread security attributes 
-        TRUE,          // handles are inherited 
-        0,             // creation flags 
-        NULL,          // use parent's environment 
-        NULL,          // use parent's current directory 
-        &siStartInfo,  // STARTUPINFO pointer 
-        &piProcInfo);  // receives PROCESS_INFORMATION 
+    bSuccess = CreateProcess(NULL,
+                             const_cast<char *>(command.c_str()), // command line
+                             NULL,                                // process security attributes
+                             NULL,                                // primary thread security attributes
+                             TRUE,                                // handles are inherited
+                             0,                                   // creation flags
+                             NULL,                                // use parent's environment
+                             NULL,                                // use parent's current directory
+                             &siStartInfo,                        // STARTUPINFO pointer
+                             &piProcInfo);                        // receives PROCESS_INFORMATION
 
     // Close handles to the stdin and stdout pipes no longer needed by the child process
     // If they are not explicitly closed, there is no way to recognize that the child process has ended
     CloseHandle(g_hChildStd_OUT_Wr);
 
-    if (!bSuccess) {
+    if (!bSuccess)
+    {
         std::cerr << "CreateProcess failed\n";
         return "";
-    } else {
+    }
+    else
+    {
         // Read output from the child process's pipe for STDOUT
         // Stop when there is no more data
         DWORD dwRead;
@@ -138,9 +144,11 @@ std::string getMP3Duration(const std::string &mp3FilePath) {
         bSuccess = FALSE;
         HANDLE hParentStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
 
-        for (;;) {
+        for (;;)
+        {
             bSuccess = ReadFile(g_hChildStd_OUT_Rd, chBuf, 4096, &dwRead, NULL);
-            if (!bSuccess || dwRead == 0) break;
+            if (!bSuccess || dwRead == 0)
+                break;
 
             std::string str(chBuf, dwRead);
             outStr += str;
@@ -154,35 +162,41 @@ std::string getMP3Duration(const std::string &mp3FilePath) {
         outStr.erase(std::remove(outStr.begin(), outStr.end(), '\n'), outStr.end());
         return outStr;
     }
-    #else
+#else
     // Original POSIX-specific implementation
     int pipefd[2];
-    if (pipe(pipefd) == -1) {
+    if (pipe(pipefd) == -1)
+    {
         perror("pipe");
         exit(EXIT_FAILURE);
     }
 
     pid_t pid = fork();
-    if (pid == -1) {
+    if (pid == -1)
+    {
         perror("fork");
         exit(EXIT_FAILURE);
     }
 
-    if (pid == 0) { // Child process
-        close(pipefd[0]); // Close read end
+    if (pid == 0)
+    {                                   // Child process
+        close(pipefd[0]);               // Close read end
         dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to write end of pipe
-        close(pipefd[1]); // Close write end (now that it's duplicated)
+        close(pipefd[1]);               // Close write end (now that it's duplicated)
 
         execlp("ffprobe", "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", mp3FilePath.c_str(), NULL);
         perror("execlp");
         exit(EXIT_FAILURE);
-    } else { // Parent process
+    }
+    else
+    {                     // Parent process
         close(pipefd[1]); // Close write end
 
         char buffer[128];
         std::string result;
         ssize_t count;
-        while ((count = read(pipefd[0], buffer, sizeof(buffer)-1)) > 0) {
+        while ((count = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0)
+        {
             buffer[count] = '\0';
             result += buffer;
         }
@@ -192,7 +206,8 @@ std::string getMP3Duration(const std::string &mp3FilePath) {
         int status;
         waitpid(pid, &status, 0); // Wait for child process to finish
 
-        if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+        {
             std::cerr << "ffprobe process failed\n";
             return "";
         }
@@ -200,7 +215,7 @@ std::string getMP3Duration(const std::string &mp3FilePath) {
         result.erase(std::remove(result.begin(), result.end(), '\n'), result.end());
         return result;
     }
-    #endif
+#endif
 }
 
 int generateUnixTimestamp(const std::string &date, const std::string &time)
@@ -227,6 +242,12 @@ float validateDuration(const std::string &file_path, FileData &fileData)
     fileData.duration = durationStr; // Set the duration in FileData
 
     float minDuration = ConfigSingleton::getInstance().getMinDurationSeconds();
+
+    if (ConfigSingleton::getInstance().isDebugFileProcessor())
+    {
+        std::cout << "[" << getCurrentTime() << "] "
+                  << "fileProcessor.cpp validateDuration file duration: " << duration << std::endl;
+    }
 
     if (duration < minDuration)
     {
@@ -344,11 +365,18 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
         if (ConfigSingleton::getInstance().isDebugFileProcessor())
         {
             std::cout << "[" << getCurrentTime() << "] "
-                      << "fileProcessor.cpp processFile Should skip: " << shouldSkip << std::endl;
+                      << "fileProcessor.cpp processFile shouldSkip isFileBeingWrittenTo || isFileLocked: " << shouldSkip << std::endl;
         }
         shouldSkip = shouldSkip || (duration == 0.0);
         if (shouldSkip)
         {
+            if (ConfigSingleton::getInstance().isDebugFileProcessor())
+            {
+                std::cout << "[" << getCurrentTime() << "] "
+                          << "fileProcessor.cpp processFile shouldSkip || duration check: " << shouldSkip << std::endl;
+                std::cout << "[" << getCurrentTime() << "] "
+                          << "fileProcessor.cpp processFile Skipping: " << file_path << std::endl;
+            }
             return FileData(); // Skip further processing
         }
         fileData.filepath = file_path;
