@@ -1,10 +1,13 @@
 // Standard Library Headers
 #include <chrono>
+#include <cstdlib>
 #include <deque>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <regex>
 #include <stdexcept>
+#include <string>
 #include <thread>
 
 // Project-Specific Headers
@@ -12,12 +15,13 @@
 #include "../include/debugUtils.h"
 
 const std::string API_URL = "https://api.openai.com/v1/audio/transcriptions";
-const int MAX_RETRIES = 6;
-const std::chrono::minutes ERROR_WINDOW(5);
+const int MAX_RETRIES = 3;
 const int MAX_REQUESTS_PER_MINUTE = 50;
-const std::chrono::minutes RATE_LIMIT_WINDOW(1);
-
+const std::chrono::seconds ERROR_WINDOW(300);
+const std::chrono::seconds RATE_LIMIT_WINDOW(60);
 std::deque<std::chrono::steady_clock::time_point> requestTimestamps;
+std::deque<std::chrono::steady_clock::time_point> errorTimestamps;
+int apiErrorCount = 0;
 
 // Callback function to write the CURL response to a string
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
@@ -81,30 +85,42 @@ std::string makeCurlRequest(CURL *curl, curl_mime *mime)
     return response;
 }
 
+bool isValidResponse(const std::string &response)
+{
+    return !response.empty() && response != "Thanks for watching!";
+}
+
 // Transcribe audio using CURL
 std::string curl_transcribe_audio(const std::string &file_path, const std::string &OPENAI_API_KEY)
 {
     // Check if the file exists
     if (!std::filesystem::exists(file_path))
     {
-        throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp File does not exist: " + file_path);
+        throw std::runtime_error("[" + getCurrentTime() + "] curlHelper.cpp File does not exist: " + file_path);
     }
+
     // Check if the file is readable
     std::ifstream file(file_path);
     if (!file.good())
     {
-        throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp Cannot read file: " + file_path);
+        throw std::runtime_error("[" + getCurrentTime() + "] curlHelper.cpp Cannot read file: " + file_path);
     }
     file.close();
-    std::deque<std::chrono::steady_clock::time_point> errorTimestamps;
-    std::regex errorPattern("Bad gateway|Internal server error|Invalid file format.");
+
+    std::regex apiErrorPattern(R"(Bad gateway|Internal server error|Invalid file format.|server_error)");
+
     // Rate-limiting logic
     auto now = std::chrono::steady_clock::now();
 
-    // Remove timestamps outside the 1-minute window
+    // Remove timestamps and corresponding errors outside the 1-minute window
     while (!requestTimestamps.empty() && (now - requestTimestamps.front() > RATE_LIMIT_WINDOW))
     {
         requestTimestamps.pop_front();
+        if (!errorTimestamps.empty())
+        {
+            errorTimestamps.pop_front();
+            apiErrorCount--;
+        }
     }
 
     // Check if we've exceeded the rate limit
@@ -120,7 +136,7 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
         CURL *curl = curl_easy_init();
         if (!curl)
         {
-            throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp CURL initialization failed");
+            throw std::runtime_error("[" + getCurrentTime() + "] curlHelper.cpp CURL initialization failed");
         }
 
         struct curl_slist *headers = NULL;
@@ -137,30 +153,29 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
         curl_easy_cleanup(curl);
         curl_mime_free(mime);
 
-        if (!std::regex_search(response, errorPattern))
+        if (!std::regex_search(response, apiErrorPattern) && isValidResponse(response))
         {
             return response; // Success, return the response
         }
 
-        // Log the error timestamp
-        auto now = std::chrono::steady_clock::now();
-        errorTimestamps.push_back(now);
-
-        // Remove timestamps outside the 5-minute window
-        while (!errorTimestamps.empty() && (now - errorTimestamps.front() > ERROR_WINDOW))
+        // Increment error count if it's an API error
+        if (std::regex_search(response, apiErrorPattern))
         {
-            errorTimestamps.pop_front();
+            apiErrorCount++;
+            errorTimestamps.push_back(std::chrono::steady_clock::now());
         }
 
-        // Check if we've exceeded the error limit within the window
-        if (errorTimestamps.size() >= MAX_RETRIES)
-        {
-            throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp Exceeded maximum number of retries within time window");
-        }
-
-        // Optional: Add a delay before retrying
+        // Add a delay before retrying
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 
-    throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp Exceeded maximum number of retries - check if OpenAI API is down - https://status.openai.com/");
+    // Check if 25% of the MAX_REQUESTS_PER_MINUTE were API errors
+    if (apiErrorCount > MAX_REQUESTS_PER_MINUTE / 4)
+    {
+        std::cerr << "[" << getCurrentTime() << "] Exiting! More than 25% of requests failed due to API errors within the rate limit window." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // If rate limit reached without majority errors, just return an error message
+    return "UNABLE_TO_TRANSCRIBE_CHECK_FILE";
 }
