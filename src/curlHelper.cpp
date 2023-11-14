@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <vector>
 
 // Project-Specific Headers
 #include "../include/curlHelper.h"
@@ -53,10 +54,6 @@ void setupCurlPostFields(CURL *curl, curl_mime *&mime, const std::string &file_p
     curl_mime_name(part, "model");
     curl_mime_data(part, "whisper-1", CURL_ZERO_TERMINATED);
 
-    // part = curl_mime_addpart(mime);
-    // curl_mime_name(part, "prompt");
-    // curl_mime_data(part, "Transcribe the radio dispatch audio. The speaker is usually a dispatcher, police officer, or EMS responder. There are often callsigns, ten-codes, and addresses said.", CURL_ZERO_TERMINATED);
-
     part = curl_mime_addpart(mime);
     curl_mime_name(part, "response_format");
     curl_mime_data(part, "json", CURL_ZERO_TERMINATED);
@@ -80,39 +77,59 @@ std::string makeCurlRequest(CURL *curl, curl_mime *mime)
 
     if (res != CURLE_OK)
     {
-        throw std::runtime_error("[" + getCurrentTime() + "]" + "curlHelper.cpp CURL request failed: " + std::string(curl_easy_strerror(res)));
+        throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp CURL request failed: " + std::string(curl_easy_strerror(res)));
     }
     return response;
 }
 
+// Check if the response contains a valid transcription and no halucinations
 bool isValidResponse(const std::string &response)
 {
     return !response.empty() && response != "Thanks for watching!";
 }
 
-// Transcribe audio using CURL
-std::string curl_transcribe_audio(const std::string &file_path, const std::string &OPENAI_API_KEY)
+// List of API error messages to check against
+const std::vector<std::string> apiErrorMessages = {
+    "Bad gateway",
+    "Internal server error",
+    "Invalid file format.",
+    "server_error"};
+
+// Function to check if the response contains any of the error messages
+bool containsApiError(const std::string &response)
 {
-    // Check if the file exists
+    for (const auto &errorMsg : apiErrorMessages)
+    {
+        if (response.find(errorMsg) != std::string::npos)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Check file existence and readability
+void checkFileValidity(const std::string &file_path)
+{
     if (!std::filesystem::exists(file_path))
     {
-        throw std::runtime_error("[" + getCurrentTime() + "] curlHelper.cpp File does not exist: " + file_path);
+        throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp File does not exist: " + file_path);
     }
 
-    // Check if the file is readable
     std::ifstream file(file_path);
     if (!file.good())
     {
-        throw std::runtime_error("[" + getCurrentTime() + "] curlHelper.cpp Cannot read file: " + file_path);
+        throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp Cannot read file: " + file_path);
     }
     file.close();
+}
 
-    std::regex apiErrorPattern(R"(Bad gateway|Internal server error|Invalid file format.|server_error)");
-
-    // Rate-limiting logic
+// Handle rate limiting
+void handleRateLimiting()
+{
     auto now = std::chrono::steady_clock::now();
 
-    // Remove timestamps and corresponding errors outside the 1-minute window
+    // Remove timestamps outside the 1-minute window
     while (!requestTimestamps.empty() && (now - requestTimestamps.front() > RATE_LIMIT_WINDOW))
     {
         requestTimestamps.pop_front();
@@ -126,17 +143,24 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
     // Check if we've exceeded the rate limit
     if (requestTimestamps.size() >= MAX_REQUESTS_PER_MINUTE)
     {
-        // Calculate sleep duration: time until the oldest request in the window "expires"
         auto sleep_duration = RATE_LIMIT_WINDOW - (now - requestTimestamps.front());
         std::this_thread::sleep_for(sleep_duration);
     }
+}
+
+// Transcribe audio using CURL
+std::string curl_transcribe_audio(const std::string &file_path, const std::string &OPENAI_API_KEY)
+{
+    checkFileValidity(file_path);
 
     for (int retryCount = 0; retryCount < MAX_RETRIES; ++retryCount)
     {
+        handleRateLimiting();
+
         CURL *curl = curl_easy_init();
         if (!curl)
         {
-            throw std::runtime_error("[" + getCurrentTime() + "] curlHelper.cpp CURL initialization failed");
+            throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp CURL initialization failed");
         }
 
         struct curl_slist *headers = NULL;
@@ -153,29 +177,26 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
         curl_easy_cleanup(curl);
         curl_mime_free(mime);
 
-        if (!std::regex_search(response, apiErrorPattern) && isValidResponse(response))
+        if (!containsApiError(response) && isValidResponse(response))
         {
             return response; // Success, return the response
         }
 
-        // Increment error count if it's an API error
-        if (std::regex_search(response, apiErrorPattern))
+        if (containsApiError(response))
         {
             apiErrorCount++;
-            errorTimestamps.push_back(std::chrono::steady_clock::now());
+            auto now = std::chrono::steady_clock::now();
+            errorTimestamps.push_back(now);
         }
 
-        // Add a delay before retrying
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 
-    // Check if 25% of the MAX_REQUESTS_PER_MINUTE were API errors
     if (apiErrorCount > MAX_REQUESTS_PER_MINUTE / 4)
     {
-        std::cerr << "[" << getCurrentTime() << "] Exiting! More than 25% of requests failed due to API errors within the rate limit window." << std::endl;
+        std::cerr << "[" << getCurrentTime() << "] Majority of retries failed due to API errors." << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    // If unable to transcribe the file after MAX_RETRIES, return an error message
     return "UNABLE_TO_TRANSCRIBE_CHECK_FILE";
 }
