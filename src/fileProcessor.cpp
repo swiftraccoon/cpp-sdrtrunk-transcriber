@@ -11,10 +11,16 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
-#include <unistd.h>
 #include <vector>
 #include <sys/types.h>
 #include <sys/wait.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/wait.h>
+#endif
 
 // Project-Specific Headers
 #include "../include/ConfigSingleton.h"
@@ -67,55 +73,135 @@ void find_and_move_mp3_without_txt(const std::string &directoryToMonitor)
     }
 }
 
-std::string getMP3Duration(const std::string &mp3FilePath)
-{
+std::string getMP3Duration(const std::string &mp3FilePath) {
+    #ifdef _WIN32
+    // Windows-specific implementation
+    // Command to execute
+    std::string command = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"" + mp3FilePath + "\"";
+
+    // Create a pipe for the child process's STDOUT
+    SECURITY_ATTRIBUTES saAttr;
+    saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
+    saAttr.bInheritHandle = TRUE;
+    saAttr.lpSecurityDescriptor = NULL;
+
+    HANDLE g_hChildStd_OUT_Rd = NULL;
+    HANDLE g_hChildStd_OUT_Wr = NULL;
+
+    // Create a pipe for the child process's STDOUT
+    if (!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &saAttr, 0)) {
+        std::cerr << "StdoutRd CreatePipe failed\n";
+        return "";
+    }
+
+    // Ensure the read handle to the pipe for STDOUT is not inherited
+    if (!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0)) {
+        std::cerr << "Stdout SetHandleInformation failed\n";
+        return "";
+    }
+
+    // Create the child process
+    PROCESS_INFORMATION piProcInfo;
+    STARTUPINFO siStartInfo;
+    BOOL bSuccess = FALSE;
+
+    ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
+    ZeroMemory(&siStartInfo, sizeof(STARTUPINFO));
+    siStartInfo.cb = sizeof(STARTUPINFO);
+    siStartInfo.hStdError = g_hChildStd_OUT_Wr;
+    siStartInfo.hStdOutput = g_hChildStd_OUT_Wr;
+    siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+    bSuccess = CreateProcess(NULL, 
+        const_cast<char *>(command.c_str()), // command line 
+        NULL,          // process security attributes 
+        NULL,          // primary thread security attributes 
+        TRUE,          // handles are inherited 
+        0,             // creation flags 
+        NULL,          // use parent's environment 
+        NULL,          // use parent's current directory 
+        &siStartInfo,  // STARTUPINFO pointer 
+        &piProcInfo);  // receives PROCESS_INFORMATION 
+
+    // Close handles to the stdin and stdout pipes no longer needed by the child process
+    // If they are not explicitly closed, there is no way to recognize that the child process has ended
+    CloseHandle(g_hChildStd_OUT_Wr);
+
+    if (!bSuccess) {
+        std::cerr << "CreateProcess failed\n";
+        return "";
+    } else {
+        // Read output from the child process's pipe for STDOUT
+        // Stop when there is no more data
+        DWORD dwRead;
+        CHAR chBuf[4096];
+        std::string outStr;
+        bSuccess = FALSE;
+        HANDLE hParentStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+
+        for (;;) {
+            bSuccess = ReadFile(g_hChildStd_OUT_Rd, chBuf, 4096, &dwRead, NULL);
+            if (!bSuccess || dwRead == 0) break;
+
+            std::string str(chBuf, dwRead);
+            outStr += str;
+        }
+
+        // The remaining cleanup is the same for both processes
+        CloseHandle(piProcInfo.hProcess);
+        CloseHandle(piProcInfo.hThread);
+
+        // Trim the output string
+        outStr.erase(std::remove(outStr.begin(), outStr.end(), '\n'), outStr.end());
+        return outStr;
+    }
+    #else
+    // Original POSIX-specific implementation
     int pipefd[2];
-    if (pipe(pipefd) == -1)
-    {
+    if (pipe(pipefd) == -1) {
         perror("pipe");
         exit(EXIT_FAILURE);
     }
 
     pid_t pid = fork();
-    if (pid == -1)
-    {
+    if (pid == -1) {
         perror("fork");
         exit(EXIT_FAILURE);
     }
 
-    if (pid == 0)
-    {                                   // Child process
-        close(pipefd[0]);               // Close read end
+    if (pid == 0) { // Child process
+        close(pipefd[0]); // Close read end
         dup2(pipefd[1], STDOUT_FILENO); // Redirect stdout to write end of pipe
-        close(pipefd[1]);               // Close write end (now that it's duplicated)
+        close(pipefd[1]); // Close write end (now that it's duplicated)
 
         execlp("ffprobe", "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", mp3FilePath.c_str(), NULL);
         perror("execlp");
         exit(EXIT_FAILURE);
-    }
-    else
-    {                     // Parent process
+    } else { // Parent process
         close(pipefd[1]); // Close write end
 
         char buffer[128];
-        std::string durationStr;
-        ssize_t bytesRead;
-        while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0)
-        {
-            buffer[bytesRead] = '\0';
-            durationStr += buffer;
+        std::string result;
+        ssize_t count;
+        while ((count = read(pipefd[0], buffer, sizeof(buffer)-1)) > 0) {
+            buffer[count] = '\0';
+            result += buffer;
         }
 
         close(pipefd[0]); // Close read end
 
         int status;
-        waitpid(pid, &status, 0); // Wait for child to exit
+        waitpid(pid, &status, 0); // Wait for child process to finish
 
-        // Remove any trailing newline characters
-        durationStr.erase(durationStr.find_last_not_of("\n\r") + 1);
+        if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+            std::cerr << "ffprobe process failed\n";
+            return "";
+        }
 
-        return durationStr;
+        result.erase(std::remove(result.begin(), result.end(), '\n'), result.end());
+        return result;
     }
+    #endif
 }
 
 int generateUnixTimestamp(const std::string &date, const std::string &time)
