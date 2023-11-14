@@ -42,7 +42,7 @@ std::optional<YAML::Node> loadConfig(const std::string &configPath)
     if (!std::filesystem::exists(configPath))
     {
         std::cerr << "[" << getCurrentTime() << "] "
-                  << "main.cpp Configuration file not found.\n";
+                  << "main.cpp loadConfig Configuration file not found.\n";
         return std::nullopt;
     }
     // TODO: add more error handling here?
@@ -62,15 +62,15 @@ void processDirectory(const std::string &directoryToMonitor, const YAML::Node &c
         {
             if (entry.path().extension() == MP3_EXTENSION)
             {
-                // 22 std::cout << "[" << getCurrentTime() << "] " << "main.cpp Processing directory: " << directoryToMonitor << std::endl;
-                // 22 std::cout << "[" << getCurrentTime() << "] " << "main.cpp Checking file: " << entry.path() << std::endl;
+                // 22 std::cout << "[" << getCurrentTime() << "] " << "main.cpp processDirectory Processing directory: " << directoryToMonitor << std::endl;
+                // 22 std::cout << "[" << getCurrentTime() << "] " << "main.cpp processDirectory Checking file: " << entry.path() << std::endl;
                 try
                 {
                     fileData = processFile(entry.path(), directoryToMonitor, OPENAI_API_KEY);
                 }
                 catch (const std::runtime_error &e)
                 {
-                    // 22 std::cerr << "[" << getCurrentTime() << "] " << "main.cpp Skipping file: " << e.what() << std::endl;
+                    // 22 std::cerr << "[" << getCurrentTime() << "] " << "main.cpp processDirectory Skipping file: " << e.what() << std::endl;
                     continue; // Move on to the next file
                 }
 
@@ -84,7 +84,7 @@ void processDirectory(const std::string &directoryToMonitor, const YAML::Node &c
                     catch (const std::exception &e)
                     {
                         std::cerr << "[\" << getCurrentTime() << \"] "
-                                  << "main.cpp Database insertion failed: " << e.what() << std::endl;
+                                  << "main.cpp processDirectory Database insertion failed: " << e.what() << std::endl;
                     }
                 }
             }

@@ -11,8 +11,8 @@ DatabaseManager::DatabaseManager(const std::string &dbPath)
     if (rc)
     {
         std::cerr << "[" << getCurrentTime() << "] "
-                  << "DatabaseManager.cpp Can't open database: " << sqlite3_errmsg(db) << std::endl;
-        throw std::runtime_error("[" + getCurrentTime() + "]" + "DatabaseManager.cpp Failed to open database");
+                  << "DatabaseManager.cpp DatabaseManager Can't open database: " << sqlite3_errmsg(db) << std::endl;
+        throw std::runtime_error("[" + getCurrentTime() + "]" + "DatabaseManager.cpp DatabaseManager Failed to open database");
     }
 }
 
@@ -29,7 +29,7 @@ void DatabaseManager::createTable()
     if (rc != SQLITE_OK)
     {
         std::cerr << "[" << getCurrentTime() << "] "
-                  << "DatabaseManager.cpp SQL error: " << errMsg << std::endl;
+                  << "DatabaseManager.cpp createTable SQL error: " << errMsg << std::endl;
         sqlite3_free(errMsg);
     }
 }
@@ -42,7 +42,7 @@ void DatabaseManager::insertRecording(const std::string &date, const std::string
     if (rc != SQLITE_OK)
     {
         std::cerr << "[" << getCurrentTime() << "] "
-                  << "DatabaseManager.cpp Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+                  << "DatabaseManager.cpp insertRecording Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
         return;
     }
 
@@ -63,7 +63,7 @@ void DatabaseManager::insertRecording(const std::string &date, const std::string
     if (rc != SQLITE_DONE)
     {
         std::cerr << "[" << getCurrentTime() << "] "
-                  << "DatabaseManager.cpp Execution failed: " << sqlite3_errmsg(db) << std::endl;
+                  << "DatabaseManager.cpp insertRecording Execution failed: " << sqlite3_errmsg(db) << std::endl;
         sqlite3_finalize(stmt);
         return;
     }
