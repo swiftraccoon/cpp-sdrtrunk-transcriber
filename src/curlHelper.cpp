@@ -113,17 +113,19 @@ bool containsApiError(const std::string &response)
 // Check file existence and readability
 void checkFileValidity(const std::string &file_path)
 {
-    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Checking if file exists." << std::endl;
+    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp checkFileValidity Checking if file exists." << std::endl;
     if (!std::filesystem::exists(file_path))
     {
-        throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp File does not exist: " + file_path);
+        throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp checkFileValidity File does not exist: " + file_path);
+        std::cout.flush();
     }
 
     std::ifstream file(file_path);
-    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Checking if file is readable." << std::endl;
+    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp checkFileValidity Checking if file is readable." << std::endl;
     if (!file.good())
     {
-        throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp Cannot read file: " + file_path);
+        throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp checkFileValidity Cannot read file: " + file_path);
+        std::cout.flush();
     }
     file.close();
 }
@@ -131,6 +133,7 @@ void checkFileValidity(const std::string &file_path)
 // Handle rate limiting
 void handleRateLimiting()
 {
+    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Entered handleRateLimiting" << std::endl;
     auto now = std::chrono::steady_clock::now();
 
     // Remove timestamps outside the 1-minute window
@@ -148,7 +151,7 @@ void handleRateLimiting()
     if (requestTimestamps.size() >= maxRequestsPerMinute)
     {
         auto sleep_duration = rateLimitWindow - (now - requestTimestamps.front());
-        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Rate limit reached, sleeping for " << sleep_duration.count() << " seconds." << std::endl;
+        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp handleRateLimiting Rate limit reached, sleeping for " << sleep_duration.count() << " seconds." << std::endl;
         std::this_thread::sleep_for(sleep_duration);
     }
 }
@@ -158,18 +161,21 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
 {
     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio called with file path: " << file_path << std::endl;
     checkFileValidity(file_path);
-    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Entering retry loop." << std::endl;
+    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio Entering retry loop." << std::endl;
+    std::cout.flush();
     try
     {
+        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio maxRetries: " << maxRetries << std::endl;
         for (int retryCount = 0; retryCount < maxRetries; ++retryCount)
         {
-            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp attempt " << (retryCount + 1) << " of " << maxRetries << std::endl;
+            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio attempt " << (retryCount + 1) << " of " << maxRetries << std::endl;
+            std::cout.flush();
             handleRateLimiting();
 
             CURL *curl = curl_easy_init();
             if (!curl)
             {
-                throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp CURL initialization failed");
+                throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp curl_transcribe_audio CURL initialization failed");
             }
 
             struct curl_slist *headers = NULL;
@@ -216,5 +222,5 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
         exit(EXIT_FAILURE);
     }
 
-    return "curlHelper.cpp_UNABLE_TO_TRANSCRIBE_CHECK_FILE";
+    // return "curlHelper.cpp_UNABLE_TO_TRANSCRIBE_CHECK_FILE";
 }
