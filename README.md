@@ -21,6 +21,7 @@ This is not at all tested on Windows. Feel free to file issues for problems with
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [System Service](#system-service)
+- [SDRTrunk Transcribed Web](#sdrtrunk-transcribed-web)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -97,6 +98,19 @@ A BASH script is provided to show an example template for setting up the binary 
 # Edit install-systemd-service.sh
 sudo ./install-systemd-service.sh
 ```
+
+## SDRTrunk Transcribed Web
+
+Now that you have a folder of processed recordings you can set them up to be displayed within [sdrtrunk-transcribed-web](https://github.com/swiftraccoon/sdrtrunk-transcribed-web).
+
+You just need to copy the:
+- `.txt` files into the `sdrtrunk-transcribed-web/public/transcriptions` folder
+- `.mp3` files into `sdrtrunk-transcribed-web/public/audio` folder
+
+An example script for Linux users to do that is in `scripts/` of this repo: 
+- [rsync_local_to_server.sh](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/blob/main/scripts/rsync_local_to_server.sh)
+
+(I'll soon enable you to [utilize different folders](https://github.com/swiftraccoon/sdrtrunk-transcribed-web/issues/13))
 
 ## Contributing
 
