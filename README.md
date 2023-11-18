@@ -29,6 +29,7 @@ This is not at all tested on Windows. Feel free to file issues for problems with
 
 - Monitors a directory for new MP3 files
 - Transcribes audio using OpenAI's API
+- Searches transcriptions for tencodes/signals/callsigns in provided JSON files and appends their translation to end of transcription
 - Manages transcriptions and metadata in an SQLite3 database
 - (in progress) Provides a systemd service for automated running
 
