@@ -42,11 +42,11 @@ This is not at all tested on Windows. Feel free to file issues for problems with
 
 ### Fedora
 
-- `sudo dnf install libcurl-devel sqlite-devel pkg-config yaml-cpp-devel`
+- `sudo dnf install mpg123-devel libcurl-devel sqlite-devel pkg-config yaml-cpp-devel`
 
 ### Ubuntu
 
-- `sudo apt-get install libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev`
+- `sudo apt-get install libmpg123 libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev`
 
 ### Windows
 
