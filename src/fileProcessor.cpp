@@ -27,7 +27,9 @@
 #include "../include/debugUtils.h"
 #include "../include/FileData.h"
 #include "../include/fileProcessor.h"
+#include "../include/globalFlags.h"
 #include "../include/transcriptionProcessor.h"
+#include "../include/whisperCPP.h"
 
 bool isFileBeingWrittenTo(const std::string &filePath)
 {
@@ -263,6 +265,12 @@ std::string transcribeAudio(const std::string &file_path, const std::string &OPE
     return curl_transcribe_audio(file_path, OPENAI_API_KEY);
 }
 
+// Transcribe the audio file locally with whisper.cpp
+std::string transcribeAudioLocal(const std::string &file_path)
+{
+    return local_transcribe_audio(file_path);
+}
+
 // Extracts information from the filename and transcription
 void extractFileInfo(FileData &fileData, const std::string &filename, const std::string &transcription)
 {
@@ -304,7 +312,14 @@ void extractFileInfo(FileData &fileData, const std::string &filename, const std:
     fileData.unixtime = generateUnixTimestamp(fileData.date, fileData.time);
     fileData.filename = filename;
     fileData.transcription = transcription;
-    fileData.v2transcription = generateV2Transcription(transcription, fileData.talkgroupID, fileData.radioID);
+
+    // Retrieve the talkgroupFiles map from ConfigSingleton
+    const auto& talkgroupFiles = ConfigSingleton::getInstance().getTalkgroupFiles();
+    fileData.v2transcription = generateV2Transcription(
+        transcription, 
+        fileData.talkgroupID, 
+        fileData.radioID,
+        talkgroupFiles);
 }
 
 // Saves the transcription to a TXT file
@@ -380,7 +395,16 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
             return FileData(); // Skip further processing
         }
         fileData.filepath = file_path;
-        std::string transcription = transcribeAudio(file_path, OPENAI_API_KEY);
+        std::string transcription;
+        if (gLocalFlag) {
+            std::cout << "[" << getCurrentTime() << "] "
+                    << "fileProcessor.cpp processFile gLocalFlag " << gLocalFlag << std::endl;
+            transcription = transcribeAudioLocal(file_path);  // Assign directly, no redeclaration
+        } else {
+            std::cout << "[" << getCurrentTime() << "] "
+                    << "fileProcessor.cpp processFile gLocalFlag " << gLocalFlag << std::endl;
+            transcription = transcribeAudio(file_path, OPENAI_API_KEY);  // Assign directly, no redeclaration
+        }
         extractFileInfo(fileData, path.filename().string(), transcription);
 
         saveTranscription(fileData);

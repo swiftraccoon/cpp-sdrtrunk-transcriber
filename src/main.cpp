@@ -19,23 +19,15 @@
 #include "../include/debugUtils.h"
 #include "../include/FileData.h"
 #include "../include/fileProcessor.h"
+#include "../include/globalFlags.h"
 
 constexpr const char *DEFAULT_CONFIG_PATH = "./config.yaml";
 constexpr const char *MP3_EXTENSION = ".mp3";
+bool gLocalFlag = false;
 
 std::optional<YAML::Node> loadConfig(const std::string &configPath);
 
 void processDirectory(const std::string &directoryToMonitor, const YAML::Node &config, DatabaseManager &dbManager);
-
-void displayHelp()
-{
-    std::cout << "Usage: ./sdrTrunkTranscriber [options]\n";
-    std::cout << "Options:\n";
-    std::cout << "  -c <config_path>  Path to the configuration file. (Optional, default is './config.yaml')\n";
-    std::cout << "  -h, --help    Display this help message.\n";
-    std::cout << "\n";
-    std::cout << "\n";
-}
 
 std::optional<YAML::Node> loadConfig(const std::string &configPath)
 {
@@ -110,7 +102,10 @@ int main(int argc, char *argv[])
     CLI::App app{"transcribe and process SDRTrunk mp3 recordings"};
     std::string configPath = DEFAULT_CONFIG_PATH;
     app.add_option("-c,--config", configPath, "Configuration path (Optional, default is './config.yaml')");
+    app.add_flag("-l,--local", gLocalFlag, "Set this to enable local transcription via whisper.cpp");
     CLI11_PARSE(app, argc, argv);
+    // Disable --local even if it's passed. See #13 for why
+    bool gLocalFlag = false;
 
     auto configOpt = loadConfig(configPath);
     if (!configOpt.has_value())
@@ -124,10 +119,11 @@ int main(int argc, char *argv[])
               << "=======================================" << std::endl;
     std::cout << "[" << getCurrentTime() << "] "
               << "Config variables:" << std::endl;
-    for (YAML::const_iterator it = config.begin(); it != config.end(); ++it)
-    {
-        std::cout << it->first.as<std::string>() << ": " << it->second.as<std::string>() << std::endl;
-    }
+    // below loop breaks our glossary implementation
+    // for (YAML::const_iterator it = config.begin(); it != config.end(); ++it)
+    // {
+    //     std::cout << it->first.as<std::string>() << ": " << it->second.as<std::string>() << std::endl;
+    // }
     std::cout << "[" << getCurrentTime() << "] "
               << "=======================================" << std::endl;
 

@@ -19,45 +19,69 @@
 #include "../include/ConfigSingleton.h"
 #include "../include/debugUtils.h"
 
+
 std::unordered_map<std::string, std::string> readMappingFile(const std::string &filePath);
 std::string extractActualTranscription(const std::string &transcription);
 void insertMappings(std::stringstream &orderedJsonStr, const std::string &actualTranscription, const std::unordered_map<std::string, std::string> &mappings);
 
-std::unordered_set<int> specialTalkgroupIDs = {52197, 52198, 52199, 52200, 52201};
-
-std::string getAppropriateFile(int talkgroupID, std::function<std::string()> getNCSHPFile, std::function<std::string()> getDefaultFile)
+// Function to parse a string representing a range or list of talkgroup IDs
+std::unordered_set<int> parseTalkgroupIDs(const std::string &idString)
 {
-    if (specialTalkgroupIDs.find(talkgroupID) != specialTalkgroupIDs.end())
+    std::unordered_set<int> ids;
+    std::stringstream ss(idString);
+    std::string token;
+    while (std::getline(ss, token, ','))
     {
-        return getNCSHPFile();
+        size_t dash = token.find('-');
+        if (dash != std::string::npos)
+        {
+            int start = std::stoi(token.substr(0, dash));
+            int end = std::stoi(token.substr(dash + 1));
+            for (int i = start; i <= end; ++i)
+            {
+                ids.insert(i);
+            }
+        }
+        else
+        {
+            ids.insert(std::stoi(token));
+        }
     }
-    return getDefaultFile();
+    return ids;
 }
 
-std::string generateV2Transcription(const std::string &transcription, int talkgroupID, int radioID)
+// Function to read talkgroup-specific file mappings from config.yaml
+std::unordered_map<int, TalkgroupFiles> readTalkgroupFileMappings(const std::string &configFilePath)
 {
-    ConfigSingleton &config = ConfigSingleton::getInstance();
+    YAML::Node config = YAML::LoadFile(configFilePath);
+    std::unordered_map<int, TalkgroupFiles> mappings;
 
-    const auto tensignFile = getAppropriateFile(
-        talkgroupID, [&]()
-        { return config.getNCSHP_TensignFile(); },
-        [&]()
-        { return config.getTensignFile(); });
-    const auto callsignFile = getAppropriateFile(
-        talkgroupID, [&]()
-        { return config.getNCSHP_CallsignFile(); },
-        [&]()
-        { return config.getCallsignFile(); });
-    const auto signalsFile = getAppropriateFile(
-        talkgroupID, [&]()
-        { return config.getNCSHP_SignalFile(); },
-        [&]()
-        { return config.getSignalFile(); });
+    if (config["talkgroupFiles"])
+    {
+        for (const auto &tg : config["talkgroupFiles"])
+        {
+            auto ids = parseTalkgroupIDs(tg.first.as<std::string>());
+            TalkgroupFiles files;
+            for (const auto &file : tg.second["glossary"])
+            {
+                files.glossaryFiles.push_back(file.as<std::string>());
+            }
+            for (int id : ids)
+            {
+                mappings[id] = files;
+            }
+        }
+    }
+    return mappings;
+}
 
-    const auto tensigns = readMappingFile(tensignFile);
-    const auto callsigns = readMappingFile(callsignFile);
-    const auto signals = readMappingFile(signalsFile);
-
+std::string generateV2Transcription(
+    const std::string &transcription,
+    int talkgroupID,
+    int radioID,
+    const std::unordered_map<int, TalkgroupFiles> &talkgroupFiles)
+{
+    // Extract the actual transcription
     const auto actualTranscription = extractActualTranscription(transcription);
     if (actualTranscription.empty())
     {
@@ -67,13 +91,29 @@ std::string generateV2Transcription(const std::string &transcription, int talkgr
         return {};
     }
 
+    std::unordered_map<std::string, std::string> mappings;
+
+    // Check if there are glossary files for the talkgroup
+    auto it = talkgroupFiles.find(talkgroupID);
+    if (it != talkgroupFiles.end())
+    {
+        // Process each glossary file
+        for (const auto &file : it->second.glossaryFiles)
+        {
+            // Read the mappings from each glossary file
+            auto fileMappings = readMappingFile(file);
+            // Merge the mappings from this file into the main mappings map
+            mappings.insert(fileMappings.begin(), fileMappings.end());
+        }
+    }
+
+    // Build the ordered JSON string
     std::stringstream orderedJsonStr;
     orderedJsonStr << "{";
     orderedJsonStr << "\"" << std::to_string(radioID) << "\":\"" << actualTranscription << "\"";
 
-    insertMappings(orderedJsonStr, actualTranscription, tensigns);
-    insertMappings(orderedJsonStr, actualTranscription, signals);
-    insertMappings(orderedJsonStr, actualTranscription, callsigns);
+    // Insert the mappings into the JSON string
+    insertMappings(orderedJsonStr, actualTranscription, mappings);
 
     orderedJsonStr << "}";
 

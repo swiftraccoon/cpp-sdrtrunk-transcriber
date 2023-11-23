@@ -5,5 +5,12 @@
     "10-4": "Affirmative (OK)",
     "10-5": "Relay (to)",
     "10-6": "Busy",
-    "10-7": "Out-of-Service"
+    "10-7": "Out-of-Service",
+    "101": "Signal Weak",
+    "102": "Signal Good",
+    "103": "Stop Transmitting",
+    "104": "Affirmative (OK)",
+    "105": "Relay (to)",
+    "106": "Busy",
+    "107": "Out-of-Service"
 }

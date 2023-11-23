@@ -7,6 +7,8 @@
 // Third-Party Library Headers
 #include <yaml-cpp/yaml.h>
 
+#include "transcriptionProcessor.h"
+
 class ConfigSingleton
 {
 public:
@@ -14,12 +16,7 @@ public:
     void initialize(const YAML::Node &config);
 
     std::string getOpenAIAPIKey() const;
-    std::string getTensignFile() const;
-    std::string getCallsignFile() const;
-    std::string getSignalFile() const;
-    std::string getNCSHP_TensignFile() const;
-    std::string getNCSHP_CallsignFile() const;
-    std::string getNCSHP_SignalFile() const;
+    const std::unordered_map<int, TalkgroupFiles>& getTalkgroupFiles() const;
     std::string getDatabasePath() const;
     std::string getDirectoryToMonitor() const;
     int getLoopWaitSeconds() const;
@@ -41,14 +38,9 @@ private:
     ConfigSingleton &operator=(const ConfigSingleton &) = delete;
 
     std::string openaiAPIKey;
-    std::string tensignFile;
-    std::string callsignFile;
-    std::string signalFile;
-    std::string NCSHP_tensignFile;
-    std::string NCSHP_callsignFile;
-    std::string NCSHP_signalFile;
     std::string databasePath;
     std::string directoryToMonitor;
+    std::unordered_map<int, TalkgroupFiles> talkgroupFiles;
     int loopWaitSeconds;
     int maxRetries;
     int maxRequestsPerMinute;

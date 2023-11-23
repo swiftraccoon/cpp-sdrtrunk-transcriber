@@ -1,5 +1,10 @@
+#include <iostream> // Include iostream for debug output
+#include <unordered_set>
+
 // Project-Specific Headers
 #include "../include/ConfigSingleton.h"
+#include "../include/debugUtils.h"
+#include "../include/transcriptionProcessor.h"
 
 ConfigSingleton &ConfigSingleton::getInstance()
 {
@@ -9,12 +14,26 @@ ConfigSingleton &ConfigSingleton::getInstance()
 
 void ConfigSingleton::initialize(const YAML::Node &config)
 {
-    tensignFile = config["TENSIGN_FILE"].as<std::string>();
-    callsignFile = config["CALLSIGNS_FILE"].as<std::string>();
-    signalFile = config["SIGNALS_FILE"].as<std::string>();
-    NCSHP_tensignFile = config["NCSHP_TENSIGN_FILE"].as<std::string>();
-    NCSHP_callsignFile = config["NCSHP_CALLSIGNS_FILE"].as<std::string>();
-    NCSHP_signalFile = config["NCSHP_SIGNALS_FILE"].as<std::string>();
+    std::cout << "[" << getCurrentTime() << "] " << "ConfigSingleton.cpp Config YAML content:\n" << config << std::endl;
+    // Parsing TALKGROUP_FILES with debug output
+    const YAML::Node &tgFilesNode = config["TALKGROUP_FILES"];
+    for (const auto &tg : tgFilesNode) {
+        std::string tgKey = tg.first.as<std::string>();
+        std::cout << "[" << getCurrentTime() << "] " << "ConfigSingleton.cpp Processing Talkgroup: " << tgKey << std::endl; // Debugging output
+
+        std::unordered_set<int> tgIDs = parseTalkgroupIDs(tgKey);
+        const YAML::Node &glossaryNode = tg.second["GLOSSARY"];
+        std::vector<std::string> glossaryFiles;
+        for (const auto &file : glossaryNode) {
+            glossaryFiles.push_back(file.as<std::string>());
+            std::cout << "[" << getCurrentTime() << "] " << "ConfigSingleton.cpp Added Glossary File: " << file.as<std::string>() << std::endl; // Debugging output
+        }
+
+        TalkgroupFiles tgFiles{glossaryFiles};
+        for (int id : tgIDs) {
+            talkgroupFiles[id] = tgFiles;
+        }
+    }
     databasePath = config["DATABASE_PATH"].as<std::string>();
     directoryToMonitor = config["DirectoryToMonitor"].as<std::string>();
     loopWaitSeconds = config["LoopWaitSeconds"].as<int>();
@@ -31,12 +50,9 @@ void ConfigSingleton::initialize(const YAML::Node &config)
     debugTranscriptionProcessor = config["DEBUG_TRANSCRIPTION_PROCESSOR"].as<bool>(false);
 }
 
-std::string ConfigSingleton::getTensignFile() const { return tensignFile; }
-std::string ConfigSingleton::getCallsignFile() const { return callsignFile; }
-std::string ConfigSingleton::getSignalFile() const { return signalFile; }
-std::string ConfigSingleton::getNCSHP_TensignFile() const { return NCSHP_tensignFile; }
-std::string ConfigSingleton::getNCSHP_CallsignFile() const { return NCSHP_callsignFile; }
-std::string ConfigSingleton::getNCSHP_SignalFile() const { return NCSHP_signalFile; }
+const std::unordered_map<int, TalkgroupFiles>& ConfigSingleton::getTalkgroupFiles() const {
+        return talkgroupFiles;
+}
 std::string ConfigSingleton::getDatabasePath() const { return databasePath; }
 std::string ConfigSingleton::getDirectoryToMonitor() const { return directoryToMonitor; }
 std::string ConfigSingleton::getOpenAIAPIKey() const { return openaiAPIKey; }

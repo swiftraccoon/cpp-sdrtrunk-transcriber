@@ -109,10 +109,10 @@ bool containsApiError(const std::string &response)
 // Check file existence and readability
 void checkFileValidity(const std::string &file_path)
 {
-    if (ConfigSingleton::getInstance().isDebugCurlHelper())
-    {
-        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp checkFileValidity Checking if file exists." << std::endl;
-    }
+    // if (ConfigSingleton::getInstance().isDebugCurlHelper())
+    // {
+    //     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp checkFileValidity Checking if file exists." << std::endl;
+    // }
     if (!std::filesystem::exists(file_path))
     {
         throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp checkFileValidity File does not exist: " + file_path);
@@ -120,10 +120,10 @@ void checkFileValidity(const std::string &file_path)
     }
 
     std::ifstream file(file_path);
-    if (ConfigSingleton::getInstance().isDebugCurlHelper())
-    {
-        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp checkFileValidity Checking if file is readable." << std::endl;
-    }
+    // if (ConfigSingleton::getInstance().isDebugCurlHelper())
+    // {
+    //     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp checkFileValidity Checking if file is readable." << std::endl;
+    // }
     if (!file.good())
     {
         throw std::runtime_error("[" + getCurrentTime() + "]" + " curlHelper.cpp checkFileValidity Cannot read file: " + file_path);
@@ -137,15 +137,15 @@ void handleRateLimiting()
 {
     std::chrono::seconds rateLimitWindow(config.getRateLimitWindowSeconds());
     int maxRequestsPerMinute = config.getMaxRequestsPerMinute();
-    if (ConfigSingleton::getInstance().isDebugCurlHelper())
-    {
-        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Entered handleRateLimiting" << std::endl;
-    }
+    // if (ConfigSingleton::getInstance().isDebugCurlHelper())
+    // {
+    //     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp Entered handleRateLimiting" << std::endl;
+    // }
     auto now = std::chrono::steady_clock::now();
-    if (ConfigSingleton::getInstance().isDebugCurlHelper())
-    {
-        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp handleRateLimiting rateLimitWindow: " << rateLimitWindow.count() << " seconds" << std::endl;
-    }
+    // if (ConfigSingleton::getInstance().isDebugCurlHelper())
+    // {
+    //     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp handleRateLimiting rateLimitWindow: " << rateLimitWindow.count() << " seconds" << std::endl;
+    // }
     // Remove timestamps outside the 1-minute window
     while (!requestTimestamps.empty() && (now - requestTimestamps.front() > rateLimitWindow))
     {
@@ -158,15 +158,16 @@ void handleRateLimiting()
     }
 
     // Check if we've exceeded the rate limit
-    if (ConfigSingleton::getInstance().isDebugCurlHelper())
-    {
-        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp handleRateLimiting maxRequestsPerMinute: " << maxRequestsPerMinute << std::endl;
-    }
+    // if (ConfigSingleton::getInstance().isDebugCurlHelper())
+    // {
+    //     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp handleRateLimiting maxRequestsPerMinute: " << maxRequestsPerMinute << std::endl;
+    // }
     if (requestTimestamps.size() >= maxRequestsPerMinute)
     {
         auto sleep_duration = rateLimitWindow - (now - requestTimestamps.front());
         if (ConfigSingleton::getInstance().isDebugCurlHelper())
         {
+            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp handleRateLimiting requestTimestamps.size: " << requestTimestamps.size() << std::endl;
             std::cout << "[" << getCurrentTime() << "] curlHelper.cpp handleRateLimiting Rate limit reached, sleeping for " << sleep_duration.count() << " seconds." << std::endl;
         }
         std::this_thread::sleep_for(sleep_duration);
@@ -184,17 +185,17 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
         std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio called with file path: " << file_path << std::endl;
     }
     checkFileValidity(file_path);
-    if (ConfigSingleton::getInstance().isDebugCurlHelper())
-    {
-        std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio Entering retry loop." << std::endl;
-    }
+    // if (ConfigSingleton::getInstance().isDebugCurlHelper())
+    // {
+    //     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio Entering retry loop." << std::endl;
+    // }
     try
     {
-        if (ConfigSingleton::getInstance().isDebugCurlHelper())
-        {
-            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio maxRetries: " << maxRetries << std::endl;
-            std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio maxRequestsPerMinute: " << maxRequestsPerMinute << std::endl;
-        }
+        // if (ConfigSingleton::getInstance().isDebugCurlHelper())
+        // {
+        //     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio maxRetries: " << maxRetries << std::endl;
+        //     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio maxRequestsPerMinute: " << maxRequestsPerMinute << std::endl;
+        // }
         for (int retryCount = 0; retryCount < maxRetries; ++retryCount)
         {
             if (ConfigSingleton::getInstance().isDebugCurlHelper())
@@ -218,10 +219,10 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
 
             curl_easy_setopt(curl, CURLOPT_URL, API_URL.c_str());
             curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
-            if (ConfigSingleton::getInstance().isDebugCurlHelper())
-            {
-                std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio Making API call." << std::endl;
-            }
+            // if (ConfigSingleton::getInstance().isDebugCurlHelper())
+            // {
+            //     std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio Making API call." << std::endl;
+            // }
             std::string response = makeCurlRequest(curl, mime);
             if (ConfigSingleton::getInstance().isDebugCurlHelper())
             {
@@ -242,13 +243,30 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
 
             if (containsApiError(response))
             {
-                std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio API error detected in response." << std::endl;
+                if (ConfigSingleton::getInstance().isDebugCurlHelper()) {
+                    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio API error detected in response." << std::endl;
+                    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio apiErrorCount: " << apiErrorCount << std::endl;
+                }
                 apiErrorCount++;
+                if (ConfigSingleton::getInstance().isDebugCurlHelper()) {
+                    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio increased apiErrorCount: " << apiErrorCount << std::endl;
+                }
                 auto now = std::chrono::steady_clock::now();
                 errorTimestamps.push_back(now);
-            }
+                if (ConfigSingleton::getInstance().isDebugCurlHelper()) {
+                    auto now_in_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+                    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio now: " << now_in_ms << " ms" << std::endl;
 
-            std::this_thread::sleep_for(std::chrono::seconds(2));
+                    // If you want to print errorTimestamps, you need to iterate over it and convert each time_point to a readable format
+                    std::cout << "[" << getCurrentTime() << "] curlHelper.cpp curl_transcribe_audio errorTimestamps: ";
+                    for (const auto& timestamp : errorTimestamps) {
+                        auto timestamp_in_ms = std::chrono::duration_cast<std::chrono::milliseconds>(timestamp.time_since_epoch()).count();
+                        std::cout << timestamp_in_ms << " ms, ";
+                    }
+                    std::cout << std::endl;
+                }
+            }
+            // std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     }
     catch (const std::exception &e)
