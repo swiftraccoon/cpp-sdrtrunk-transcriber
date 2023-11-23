@@ -26,7 +26,7 @@ TALKGROUP_FILES:
         "/home/USER/SDRTrunk/tencode_glossary.json",
         "/home/USER/SDRTrunk/signals_glossary.json",
       ]
-  28513,41003-4,41013,41020:
+  28513,41003,41004,41013,41020:
     GLOSSARY: ["/home/USER/SDRTrunk/tencode_glossary.json"]
 
 # Minimum duration in seconds for an MP3 file to be processed
