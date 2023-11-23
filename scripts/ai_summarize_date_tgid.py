@@ -46,8 +46,7 @@ def split_text_into_sections(text, max_tokens):
 def summarize_text(text, prompt=None):
     if prompt is None:
         prompt = """
-        Supplied are transcriptions of radio traffic from Spindale, Forest City, 
-        and Rutherfordton North Carolina.
+        Supplied are transcriptions of radio traffic.
         You are writing a daily summary of high profile incidents for the Sheriff.
         List notable incidents that occurred in the transcriptions. 
         The file names provide more context to each message.
@@ -113,8 +112,7 @@ def main():
     summaries = []
     for i, section in enumerate(sections):
         prompt = """
-        Supplied are transcriptions of radio traffic from Spindale, Forest City, 
-        and Rutherfordton North Carolina.
+        Supplied are transcriptions of radio traffic.
         You are writing a daily summary of high profile incidents for the Sheriff.
         List notable incidents that occurred in the transcriptions. 
         The file names provide more context to each message.
