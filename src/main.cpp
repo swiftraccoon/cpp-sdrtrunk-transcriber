@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     app.add_flag("-l,--local", gLocalFlag, "Set this to enable local transcription via whisper.cpp");
     CLI11_PARSE(app, argc, argv);
     // Disable --local even if it's passed. See #13 for why
-    bool gLocalFlag = false;
+    // bool gLocalFlag = false;
 
     auto configOpt = loadConfig(configPath);
     if (!configOpt.has_value())

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -29,7 +30,7 @@
 #include "../include/fileProcessor.h"
 #include "../include/globalFlags.h"
 #include "../include/transcriptionProcessor.h"
-#include "../include/whisperCPP.h"
+#include "../include/fasterWhisper.h"
 
 bool isFileBeingWrittenTo(const std::string &filePath)
 {
@@ -274,37 +275,37 @@ std::string transcribeAudioLocal(const std::string &file_path)
 // Extracts information from the filename and transcription
 void extractFileInfo(FileData &fileData, const std::string &filename, const std::string &transcription)
 {
-    //  Extract talkgroup ID
-    size_t start = filename.find("TO_") + 3;
-    size_t end = filename.find("_FROM_");
+    std::smatch match;
+    std::string talkgroupID, radioID;
 
-    // Find the last underscore before "_FROM_" to correctly set the end position
-    size_t lastUnderscoreBeforeFrom = filename.rfind('_', end - 1);
-    if (lastUnderscoreBeforeFrom != std::string::npos && lastUnderscoreBeforeFrom > start)
-    {
-        end = lastUnderscoreBeforeFrom;
+    // Regular expressions for talkgroupID with and without 'P_' prefix
+    std::regex rgx_talkgroup_P("TO_P_(\\d+)");
+    std::regex rgx_talkgroup("TO_(\\d+)");
+    // Regular expression for radioID
+    std::regex rgx_radio("_FROM_(\\d+)");
+
+    // Determine which regex to use based on whether the filename contains 'P_'
+    if (filename.find("TO_P_") != std::string::npos) {
+        if (std::regex_search(filename, match, rgx_talkgroup_P) && match.size() > 1) {
+            talkgroupID = match[1].str();
+        }
+    } else {
+        if (std::regex_search(filename, match, rgx_talkgroup) && match.size() > 1) {
+            talkgroupID = match[1].str();
+        }
     }
 
-    std::string talkgroupID = filename.substr(start, end - start);
-
-    // Check if talkgroupID starts with 'P_'
-    if (talkgroupID.substr(0, 2) == "P_")
-    {
-        talkgroupID = talkgroupID.substr(2); // Remove the 'P_' prefix
-    }
-
-    // Check if talkgroupID contains square brackets and extract the ID before it
-    size_t bracketPos = talkgroupID.find("[");
-    if (bracketPos != std::string::npos)
-    {
-        talkgroupID = talkgroupID.substr(0, bracketPos);
+    // Extract radioID
+    if (std::regex_search(filename, match, rgx_radio) && match.size() > 1) {
+        radioID = match[1].str();
     }
     // Extract variables from filename
     std::string date = filename.substr(0, 8);
     std::string time = filename.substr(9, 6);
-    size_t startRadioID = filename.find("_FROM_") + 6;
-    size_t endRadioID = filename.find(".mp3");
-    std::string radioID = filename.substr(startRadioID, endRadioID - startRadioID);
+    std::cout << "[" << getCurrentTime() << "] "
+                      << "fileProcessor.cpp extractFileInfo RID: " << radioID << std::endl;
+    std::cout << "[" << getCurrentTime() << "] "
+                      << "fileProcessor.cpp extractFileInfo TGID: " << talkgroupID << std::endl;
     fileData.radioID = std::stoi(radioID);
     fileData.talkgroupID = std::stoi(talkgroupID);
     fileData.date = date;
@@ -399,11 +400,11 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
         if (gLocalFlag) {
             std::cout << "[" << getCurrentTime() << "] "
                     << "fileProcessor.cpp processFile gLocalFlag " << gLocalFlag << std::endl;
-            transcription = transcribeAudioLocal(file_path);  // Assign directly, no redeclaration
+            transcription = transcribeAudioLocal(file_path);
         } else {
             std::cout << "[" << getCurrentTime() << "] "
                     << "fileProcessor.cpp processFile gLocalFlag " << gLocalFlag << std::endl;
-            transcription = transcribeAudio(file_path, OPENAI_API_KEY);  // Assign directly, no redeclaration
+            transcription = transcribeAudio(file_path, OPENAI_API_KEY);
         }
         extractFileInfo(fileData, path.filename().string(), transcription);
 
