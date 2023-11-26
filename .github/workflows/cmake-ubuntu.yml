@@ -25,7 +25,7 @@ jobs:
     - name: Install sys dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libsndfile1-dev libmpg123-dev libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev
+        sudo apt-get install -y ffmpeg libavcodec-dev libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev
 
     - name: Git submodules
       run: | 
