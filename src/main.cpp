@@ -102,10 +102,8 @@ int main(int argc, char *argv[])
     CLI::App app{"transcribe and process SDRTrunk mp3 recordings"};
     std::string configPath = DEFAULT_CONFIG_PATH;
     app.add_option("-c,--config", configPath, "Configuration path (Optional, default is './config.yaml')");
-    app.add_flag("-l,--local", gLocalFlag, "Set this to enable local transcription via whisper.cpp");
+    app.add_flag("-l,--local", gLocalFlag, "Set this to enable local transcription via faster-whisper");
     CLI11_PARSE(app, argc, argv);
-    // Disable --local even if it's passed. See #13 for why
-    // bool gLocalFlag = false;
 
     auto configOpt = loadConfig(configPath);
     if (!configOpt.has_value())
