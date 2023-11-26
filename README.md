@@ -21,6 +21,7 @@ This is not at all tested on Windows. Feel free to file issues for problems with
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [System Service](#system-service)
+- [faster-whisper Local Transcription](#faster-whisper-local-transcription)
 - [SDRTrunk Transcribed Web](#sdrtrunk-transcribed-web)
 - [Contributing](#contributing)
 - [License](#license)
@@ -28,7 +29,7 @@ This is not at all tested on Windows. Feel free to file issues for problems with
 ## Features
 
 - Monitors a directory for new MP3 files
-- Transcribes audio using OpenAI's API
+- Transcribes audio using OpenAI's API or local transcription with [faster-whisper](https://github.com/SYSTRAN/faster-whisper)
 - Searches transcriptions for tencodes/signals/callsigns in provided JSON files and appends their translation to end of transcription
 - Manages transcriptions and metadata in an SQLite3 database
 - (in progress) Provides a systemd service for automated running
@@ -89,7 +90,8 @@ mv sample-config.yaml config.yaml
 
 Run the compiled binary with the following options:
 
-- `-c <config_path>`: Path to the configuration file (Optional, default is `./config.yaml`).
+- `-c, --config <config_path>`: Path to the configuration file (Optional, default is `./config.yaml`).
+- `-l, --local`: Set this to enable local transcription via faster-whisper
 - `-h, --help`: Display help message.
 
 ## System Service
@@ -102,6 +104,15 @@ A BASH script is provided to show an example template for setting up the binary 
 # Edit install-systemd-service.sh
 sudo ./install-systemd-service.sh
 ```
+
+## faster-whisper Local Transcription
+
+Follow the [faster-whisper installation](https://github.com/SYSTRAN/faster-whisper#installation) and ensure it's working after.
+
+Once you've confirmed `faster-whisper` is ready to go, next simply ensure that `fasterWhisper.py` from the `scripts/` folder is in the same folder with the `sdrTrunkTranscriber` binary.
+
+Now when you launch `sdrTrunkTranscriber --local` the transcriptions will instead be handled locally via `fasterWhisper.py`.
+
 
 ## SDRTrunk Transcribed Web
 
