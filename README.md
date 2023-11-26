@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-GPL3-blue)](#license)
 [![issues - cpp-sdrtrunk-transcriber](https://img.shields.io/github/issues/swiftraccoon/cpp-sdrtrunk-transcriber)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/issues)
 
-This project is designed to monitor a directory for SDRTrunk P25 MP3 files, categorize them based on the talkgroup ID, and create transcription files. It utilizes OpenAI's API for audio transcription and SQLite3 for database management.
+This project is designed to monitor a directory for SDRTrunk P25 MP3 files, categorize them based on the talkgroup ID, and create transcription files. You have the option to utilize [faster-whisper](https://github.com/SYSTRAN/faster-whisper) or OpenAI's API for audio transcription and we utilize SQLite3 for database management.
 
 This is not at all tested on Windows. Feel free to file issues for problems with Windows usage if you're open to assisting me debug the problem. 
 
