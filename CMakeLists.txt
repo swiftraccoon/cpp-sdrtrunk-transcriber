@@ -16,12 +16,6 @@ find_package(SQLite3 REQUIRED)
 # PkgConfig for managing package information
 find_package(PkgConfig REQUIRED)
 
-# Find libmpg123
-pkg_check_modules(MPG123 REQUIRED IMPORTED_TARGET libmpg123)
-
-# Find libsndfile
-pkg_check_modules(SNDFILE REQUIRED IMPORTED_TARGET sndfile)
-
 
 # Add yaml-cpp subdirectory to build YAML parser library
 add_subdirectory(external/yaml-cpp)
@@ -37,8 +31,6 @@ add_executable(sdrTrunkTranscriber src/main.cpp src/curlHelper.cpp src/DatabaseM
 target_include_directories(sdrTrunkTranscriber PUBLIC
     ${CURL_INCLUDE_DIRS}
     ${SQLite3_INCLUDE_DIRS}
-    ${MPG123_INCLUDE_DIRS}
-    ${SNDFILE_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
     ${CMAKE_CURRENT_SOURCE_DIR}/external/yaml-cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/external/CLI11
@@ -50,8 +42,6 @@ target_link_libraries(sdrTrunkTranscriber
     yaml-cpp       # YAML parser
     SQLite::SQLite3 # SQLite3 for database operations
     CLI11::CLI11
-    PkgConfig::MPG123
-    PkgConfig::SNDFILE
 )
 
 # Test Configuration
