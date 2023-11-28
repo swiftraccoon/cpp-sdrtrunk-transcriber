@@ -4,8 +4,9 @@
 OPENAI_API_KEY: "YOUR_API_KEY"
 
 # How frequently should we poll the DirectoryToMonitor for new files
+# actually is in milliseconds 
 # used in main.cpp
-LoopWaitSeconds: 60
+LoopWaitSeconds: 200
 
 # Directory to monitor for new SDRTrunk P25 MP3 files
 # used in main.cpp

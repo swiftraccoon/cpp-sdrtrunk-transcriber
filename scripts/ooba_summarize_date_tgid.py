@@ -9,7 +9,7 @@ url = "http://127.0.0.1:5000/v1/chat/completions"
 
 # Average length of a token, this is an estimation and might need adjustments
 AVERAGE_TOKEN_LENGTH = 4
-MAX_TOKEN_PER_SECTION = 1045
+MAX_TOKEN_PER_SECTION = 4045
 
 headers = {
     "Content-Type": "application/json"

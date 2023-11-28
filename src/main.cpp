@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
     while (true)
     {
         processDirectory(directoryToMonitor, config, dbManager);
-        std::this_thread::sleep_for(std::chrono::seconds(loopWaitSeconds));
+        std::this_thread::sleep_for(std::chrono::milliseconds(loopWaitSeconds));
     }
     return 0;
 }
