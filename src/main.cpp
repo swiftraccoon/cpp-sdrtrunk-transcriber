@@ -5,12 +5,15 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <semaphore>
 #include <stdexcept>
 #include <thread>
 
 // Third-Party Library Headers
 #include <yaml-cpp/yaml.h>
 #include <CLI/CLI.hpp>
+#include <boost/asio/thread_pool.hpp>
+#include <boost/asio/post.hpp>
 
 // Project-Specific Headers
 #include "../include/ConfigSingleton.h"
@@ -20,6 +23,7 @@
 #include "../include/FileData.h"
 #include "../include/fileProcessor.h"
 #include "../include/globalFlags.h"
+#include "../include/inotifyWatcher.h"
 
 constexpr const char *DEFAULT_CONFIG_PATH = "./config.yaml";
 constexpr const char *MP3_EXTENSION = ".mp3";
@@ -27,7 +31,6 @@ bool gLocalFlag = false;
 
 std::optional<YAML::Node> loadConfig(const std::string &configPath);
 
-void processDirectory(const std::string &directoryToMonitor, const YAML::Node &config, DatabaseManager &dbManager);
 
 std::optional<YAML::Node> loadConfig(const std::string &configPath)
 {
@@ -41,63 +44,60 @@ std::optional<YAML::Node> loadConfig(const std::string &configPath)
     return YAML::LoadFile(configPath);
 }
 
-void processDirectory(const std::string &directoryToMonitor, const YAML::Node &config, DatabaseManager &dbManager)
-{
-    FileData fileData;
-    std::string OPENAI_API_KEY = ConfigSingleton::getInstance().getOpenAIAPIKey();
-
-    find_and_move_mp3_without_txt(directoryToMonitor);
-
-    for (const auto &entry : std::filesystem::directory_iterator(directoryToMonitor))
-    {
-        if (entry.path().parent_path() == std::filesystem::path(directoryToMonitor))
-        {
-            if (entry.path().extension() == MP3_EXTENSION)
-            {
-                if (ConfigSingleton::getInstance().isDebugMain())
-                {
-                    std::cout << "[" << getCurrentTime() << "] "
-                              << "main.cpp processDirectory Processing directory: " << directoryToMonitor << std::endl;
-                    std::cout << "[" << getCurrentTime() << "] "
-                              << "main.cpp processDirectory Checking file: " << entry.path() << std::endl;
-                }
-                try
-                {
-                    fileData = processFile(entry.path(), directoryToMonitor, OPENAI_API_KEY);
-                }
-                catch (const std::runtime_error &e)
-                {
-                    if (ConfigSingleton::getInstance().isDebugMain())
-                    {
-                        std::cerr << "[" << getCurrentTime() << "] "
-                                  << "main.cpp processDirectory Skipping file: " << e.what() << std::endl;
-                    }
-                    continue; // Move on to the next file
-                }
-
-                if (!fileData.filename.empty()) // You can add more conditions based on other fields
-                {
-                    try
-                    {
-                        fileData.talkgroupName = "TODO";
+void processExistingFiles(const std::string& directoryToMonitor, boost::asio::thread_pool& processFilePool,
+                          boost::asio::thread_pool& transcribePool, int maxTranscribeThreads, DatabaseManager& dbManager, std::counting_semaphore<>& semaphore) {
+    for (const auto& entry : std::filesystem::directory_iterator(directoryToMonitor)) {
+        if (entry.path().extension() == MP3_EXTENSION) {
+            std::string filePath = entry.path().string();
+            std::cerr << "[" << getCurrentTime() << "] "
+                      << "main.cpp processExistingFiles Processing existing file: " << filePath << std::endl;
+            boost::asio::post(processFilePool, [&semaphore, &transcribePool, filePath, directoryToMonitor, maxTranscribeThreads, &dbManager]() {
+                semaphore.acquire(); // Wait and acquire the semaphore
+                try {
+                    FileData fileData = processFile(filePath, directoryToMonitor, transcribePool);
+                    if (!fileData.filename.empty()) {
+                        fileData.talkgroupName = "TODO"; // Replace with actual logic to determine talkgroup name
                         dbManager.insertRecording(fileData.date, fileData.time, fileData.unixtime, fileData.talkgroupID, fileData.talkgroupName, fileData.radioID, fileData.duration, fileData.filename, fileData.filepath, fileData.transcription, fileData.v2transcription);
                     }
-                    catch (const std::exception &e)
-                    {
-                        std::cerr << "[\" << getCurrentTime() << \"] "
-                                  << "main.cpp processDirectory Database insertion failed: " << e.what() << std::endl;
-                    }
+                } catch (const std::exception &e) {
+                    std::cerr << "[" << getCurrentTime() << "] "
+                              << "main.cpp processExistingFiles Error processing file: " << e.what() << std::endl;
                 }
-            }
+                semaphore.release(); // Release the semaphore
+            });
         }
     }
 }
 
-int main(int argc, char *argv[])
-{
+void handleInotifyEvent(const struct inotify_event* event, const std::string& directoryToMonitor, boost::asio::thread_pool& processFilePool, boost::asio::thread_pool& transcribePool,const YAML::Node& config, DatabaseManager& dbManager, int maxTranscribeThreads) {
+    if (event->mask & IN_CREATE) {
+        std::string filePath = directoryToMonitor + "/" + std::string(event->name);
+        std::cerr << "[" << getCurrentTime() << "] "
+                      << "main.cpp handleInotifyEvent filePath: " << filePath << std::endl;
+        if (filePath.substr(filePath.length() - 4) == MP3_EXTENSION) {
+            std::cerr << "[" << getCurrentTime() << "] "
+                      << "main.cpp handleInotifyEvent found mp3 file, entering IF statement.\n";
+            boost::asio::post(processFilePool, [&transcribePool, filePath, directoryToMonitor, maxTranscribeThreads, &dbManager]() {
+                try {
+                    std::cerr << "[" << getCurrentTime() << "] "
+                      << "main.cpp handleInotifyEvent entered TRY within boost::asio::post.\n";
+                    FileData fileData = processFile(filePath, directoryToMonitor, transcribePool);
+                    if (!fileData.filename.empty()) {
+                        fileData.talkgroupName = "TODO"; // Replace with actual logic to determine talkgroup name
+                        dbManager.insertRecording(fileData.date, fileData.time, fileData.unixtime, fileData.talkgroupID, fileData.talkgroupName, fileData.radioID, fileData.duration, fileData.filename, fileData.filepath, fileData.transcription, fileData.v2transcription);
+                    }
+                } catch (const std::exception &e) {
+                    std::cerr << "[" << getCurrentTime() << "] "
+                              << "main.cpp handleInotifyEvent Error processing file: " << e.what() << std::endl;
+                }
+            });
+        }
+    }
+}
+
+int main(int argc, char *argv[]) {
     std::cout << "[" << getCurrentTime() << "] "
               << "main.cpp started." << std::endl;
-    FileData fileData{};
 
     CLI::App app{"transcribe and process SDRTrunk mp3 recordings"};
     std::string configPath = DEFAULT_CONFIG_PATH;
@@ -106,39 +106,64 @@ int main(int argc, char *argv[])
     CLI11_PARSE(app, argc, argv);
 
     auto configOpt = loadConfig(configPath);
-    if (!configOpt.has_value())
-    {
+    if (!configOpt.has_value()) {
         return 1;
     }
     YAML::Node config = configOpt.value();
 
-    // Debugging: Print out all config.yaml variables
-    std::cout << "[" << getCurrentTime() << "] "
-              << "=======================================" << std::endl;
-    std::cout << "[" << getCurrentTime() << "] "
-              << "Config variables:" << std::endl;
-    // below loop breaks our glossary implementation
-    // for (YAML::const_iterator it = config.begin(); it != config.end(); ++it)
-    // {
-    //     std::cout << it->first.as<std::string>() << ": " << it->second.as<std::string>() << std::endl;
-    // }
-    std::cout << "[" << getCurrentTime() << "] "
-              << "=======================================" << std::endl;
-
     ConfigSingleton::getInstance().initialize(config);
 
-    std::string databasePath = ConfigSingleton::getInstance().getDatabasePath();
+    std::string directoryToMonitor = config["DIRECTORY_TO_MONITOR"].as<std::string>();
+    std::string databasePath = config["DATABASE_PATH"].as<std::string>();
+    int maxProcessFileThreads = config["MAX_PROCESS_FILE_THREADS"].as<int>();
+    int maxTranscribeThreads = config["MAX_TRANSCRIBE_THREADS"].as<int>();
+    std::counting_semaphore<> semaphore(maxProcessFileThreads);
+
     DatabaseManager dbManager(databasePath);
     dbManager.createTable();
 
-    // Cache frequently accessed config values
-    std::string directoryToMonitor = config["DirectoryToMonitor"].as<std::string>();
-    int loopWaitSeconds = config["LoopWaitSeconds"].as<int>();
-
-    while (true)
-    {
-        processDirectory(directoryToMonitor, config, dbManager);
-        std::this_thread::sleep_for(std::chrono::milliseconds(loopWaitSeconds));
+    int inotifyFd = inotify_init();
+    if (inotifyFd == -1) {
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "main.cpp Error initializing inotify.\n";
+        return 1;
     }
+
+    int wd = inotify_add_watch(inotifyFd, directoryToMonitor.c_str(), IN_CREATE);
+    if (wd == -1) {
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "main.cpp Error adding watch to inotify.\n";
+        return 1;
+    }
+
+    // Create the two separate thread pools
+    boost::asio::thread_pool fileProcessPool(maxProcessFileThreads);
+    boost::asio::thread_pool transcribePool(maxTranscribeThreads);
+    // Process existing files in the directory
+    processExistingFiles(directoryToMonitor, fileProcessPool, transcribePool, maxTranscribeThreads, dbManager, semaphore);
+
+    char buffer[1024];
+    while (true) {
+        int length = read(inotifyFd, buffer, 1024);
+        if (length < 0) {
+            std::cerr << "[" << getCurrentTime() << "] "
+                      << "main.cpp Error reading inotify event.\n";
+            break;
+        }
+
+        int i = 0;
+        while (i < length) {
+            struct inotify_event *event = (struct inotify_event *)&buffer[i];
+            if (event->len) {
+                handleInotifyEvent(event, directoryToMonitor, fileProcessPool, transcribePool, config, dbManager, maxTranscribeThreads);
+            }
+            i += sizeof(struct inotify_event) + event->len;
+        }
+    }
+
+    inotify_rm_watch(inotifyFd, wd);
+    close(inotifyFd);
+    fileProcessPool.join();
+    transcribePool.join();
     return 0;
 }

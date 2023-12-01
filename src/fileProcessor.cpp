@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <ctime>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <memory>
 #include <regex>
@@ -14,6 +15,9 @@
 #include <thread>
 #include <vector>
 #include <sys/types.h>
+
+#include <boost/asio.hpp>
+#include <boost/asio/use_future.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -285,27 +289,33 @@ void extractFileInfo(FileData &fileData, const std::string &filename, const std:
     std::regex rgx_radio("_FROM_(\\d+)");
 
     // Determine which regex to use based on whether the filename contains 'P_'
-    if (filename.find("TO_P_") != std::string::npos) {
-        if (std::regex_search(filename, match, rgx_talkgroup_P) && match.size() > 1) {
+    if (filename.find("TO_P_") != std::string::npos)
+    {
+        if (std::regex_search(filename, match, rgx_talkgroup_P) && match.size() > 1)
+        {
             talkgroupID = match[1].str();
         }
-    } else {
-        if (std::regex_search(filename, match, rgx_talkgroup) && match.size() > 1) {
+    }
+    else
+    {
+        if (std::regex_search(filename, match, rgx_talkgroup) && match.size() > 1)
+        {
             talkgroupID = match[1].str();
         }
     }
 
     // Extract radioID
-    if (std::regex_search(filename, match, rgx_radio) && match.size() > 1) {
+    if (std::regex_search(filename, match, rgx_radio) && match.size() > 1)
+    {
         radioID = match[1].str();
     }
     // Extract variables from filename
     std::string date = filename.substr(0, 8);
     std::string time = filename.substr(9, 6);
     std::cout << "[" << getCurrentTime() << "] "
-                      << "fileProcessor.cpp extractFileInfo RID: " << radioID << std::endl;
+              << "fileProcessor.cpp extractFileInfo RID: " << radioID << std::endl;
     std::cout << "[" << getCurrentTime() << "] "
-                      << "fileProcessor.cpp extractFileInfo TGID: " << talkgroupID << std::endl;
+              << "fileProcessor.cpp extractFileInfo TGID: " << talkgroupID << std::endl;
     fileData.radioID = std::stoi(radioID);
     fileData.talkgroupID = std::stoi(talkgroupID);
     fileData.date = date;
@@ -315,10 +325,10 @@ void extractFileInfo(FileData &fileData, const std::string &filename, const std:
     fileData.transcription = transcription;
 
     // Retrieve the talkgroupFiles map from ConfigSingleton
-    const auto& talkgroupFiles = ConfigSingleton::getInstance().getTalkgroupFiles();
+    const auto &talkgroupFiles = ConfigSingleton::getInstance().getTalkgroupFiles();
     fileData.v2transcription = generateV2Transcription(
-        transcription, 
-        fileData.talkgroupID, 
+        transcription,
+        fileData.talkgroupID,
         fileData.radioID,
         talkgroupFiles);
 }
@@ -364,59 +374,87 @@ void moveFiles(const FileData &fileData, const std::string &directoryToMonitor)
     }
 }
 
-// The refactored processFile function
-FileData processFile(const std::filesystem::path &path, const std::string &directoryToMonitor, const std::string &OPENAI_API_KEY)
+FileData processFile(const std::filesystem::path &path,
+                     const std::string &directoryToMonitor,
+                     boost::asio::thread_pool &transcribePool)
 {
+    FileData fileData;
     try
     {
-        FileData fileData;
+        std::string OPENAI_API_KEY = ConfigSingleton::getInstance().getOpenAIAPIKey();
         std::string file_path = path.string();
         if (ConfigSingleton::getInstance().isDebugFileProcessor())
         {
             std::cout << "[" << getCurrentTime() << "] "
                       << "fileProcessor.cpp processFile Processing file: " << file_path << std::endl;
         }
-        bool shouldSkip = skipFile(file_path);
-        float duration = validateDuration(file_path, fileData);
-        if (ConfigSingleton::getInstance().isDebugFileProcessor())
-        {
-            std::cout << "[" << getCurrentTime() << "] "
-                      << "fileProcessor.cpp processFile shouldSkip isFileBeingWrittenTo || isFileLocked: " << shouldSkip << std::endl;
-        }
-        shouldSkip = shouldSkip || (duration == 0.0);
-        if (shouldSkip)
+
+        if (skipFile(file_path))
         {
             if (ConfigSingleton::getInstance().isDebugFileProcessor())
             {
                 std::cout << "[" << getCurrentTime() << "] "
-                          << "fileProcessor.cpp processFile shouldSkip || duration check: " << shouldSkip << std::endl;
-                std::cout << "[" << getCurrentTime() << "] "
                           << "fileProcessor.cpp processFile Skipping: " << file_path << std::endl;
             }
-            return FileData(); // Skip further processing
+            return FileData(); // Skip file
+        }
+
+        float duration = validateDuration(file_path, fileData);
+        if (duration == 0.0)
+        {
+            return FileData(); // Skip file
         }
         fileData.filepath = file_path;
-        std::string transcription;
-        if (gLocalFlag) {
-            std::cout << "[" << getCurrentTime() << "] "
-                    << "fileProcessor.cpp processFile gLocalFlag " << gLocalFlag << std::endl;
-            transcription = transcribeAudioLocal(file_path);
-        } else {
-            std::cout << "[" << getCurrentTime() << "] "
-                    << "fileProcessor.cpp processFile gLocalFlag " << gLocalFlag << std::endl;
-            transcription = transcribeAudio(file_path, OPENAI_API_KEY);
-        }
-        extractFileInfo(fileData, path.filename().string(), transcription);
+        std::promise<std::string> promise;
+        auto transcriptionFuture = promise.get_future();
 
+        if (gLocalFlag)
+        {
+            boost::asio::post(transcribePool, [file_path, prom = std::move(promise)]() mutable
+                              {
+                try
+                {
+                    auto transcription = transcribeAudioLocal(file_path);
+                    prom.set_value(transcription);
+                }
+                catch (...)
+                {
+                    prom.set_exception(std::current_exception());
+                } });
+        }
+        else
+        {
+            boost::asio::post(transcribePool, [file_path, OPENAI_API_KEY, prom = std::move(promise)]() mutable
+                              {
+                try
+                {
+                    auto transcription = transcribeAudio(file_path, OPENAI_API_KEY);
+                    prom.set_value(transcription);
+                }
+                catch (...)
+                {
+                    prom.set_exception(std::current_exception());
+                } });
+        }
+
+        // Block until the asynchronous operation completes and get the result
+        std::string transcription = transcriptionFuture.get();
+
+        if (ConfigSingleton::getInstance().isDebugFileProcessor())
+        {
+            std::cout << "[" << getCurrentTime() << "] "
+                      << "fileProcessor.cpp processFile Transcription completed for: " << file_path << std::endl;
+        }
+
+        extractFileInfo(fileData, path.filename().string(), transcription);
         saveTranscription(fileData);
         moveFiles(fileData, directoryToMonitor);
-
-        return fileData;
     }
     catch (const std::exception &e)
     {
         std::cerr << "[" << getCurrentTime() << "] "
-                  << "fileProcessor.cpp processFile Error: " << e.what() << std::endl;
-        return FileData();
+                  << "fileProcessor.cpp processFile Error processing file: " << e.what() << " while processing " << path << std::endl;
+        // Handle error appropriately (e.g., log it, return an empty FileData, etc.)
     }
+    return fileData;
 }

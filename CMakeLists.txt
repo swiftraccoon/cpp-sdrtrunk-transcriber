@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.10)
 project(sdrTrunkTranscriber)
 
 # Set C++ standard and make it mandatory
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Find required packages
@@ -15,7 +15,13 @@ find_package(CURL REQUIRED)
 find_package(SQLite3 REQUIRED)
 # PkgConfig for managing package information
 find_package(PkgConfig REQUIRED)
-
+# Find required packages
+find_package(Boost REQUIRED COMPONENTS system thread)
+find_package(Threads REQUIRED)
+# If you have a FindInotifycpp.cmake module, use it here. Otherwise, you'll need to specify include and library paths manually.
+# find_package(Inotifycpp REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+# include_directories(${INOTIFYCPP_INCLUDE_DIRS})
 
 # Add yaml-cpp subdirectory to build YAML parser library
 add_subdirectory(external/yaml-cpp)
@@ -42,6 +48,8 @@ target_link_libraries(sdrTrunkTranscriber
     yaml-cpp       # YAML parser
     SQLite::SQLite3 # SQLite3 for database operations
     CLI11::CLI11
+    ${Boost_LIBRARIES}
+    Threads::Threads
 )
 
 # Test Configuration

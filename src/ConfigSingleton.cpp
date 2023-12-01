@@ -35,14 +35,16 @@ void ConfigSingleton::initialize(const YAML::Node &config)
         }
     }
     databasePath = config["DATABASE_PATH"].as<std::string>();
-    directoryToMonitor = config["DirectoryToMonitor"].as<std::string>();
-    loopWaitSeconds = config["LoopWaitSeconds"].as<int>();
+    directoryToMonitor = config["DIRECTORY_TO_MONITOR"].as<std::string>();
+    loopWaitMilliseconds = config["LOOP_WAIT_MILLISECONDS"].as<int>();
     openaiAPIKey = config["OPENAI_API_KEY"].as<std::string>();
     maxRetries = config["MAX_RETRIES"].as<int>();
     maxRequestsPerMinute = config["MAX_REQUESTS_PER_MINUTE"].as<int>();
     errorWindowSeconds = config["ERROR_WINDOW_SECONDS"].as<int>();
     rateLimitWindowSeconds = config["RATE_LIMIT_WINDOW_SECONDS"].as<int>();
     minDurationSeconds = config["MIN_DURATION_SECONDS"].as<int>();
+    maxProcessFileThreads = config["MAX_PROCESS_FILE_THREADS"].as<int>(2);
+    maxTranscribeThreads = config["MAX_TRANSCRIBE_THREADS"].as<int>(1);
     debugCurlHelper = config["DEBUG_CURL_HELPER"].as<bool>(false);
     debugDatabaseManager = config["DEBUG_DATABASE_MANAGER"].as<bool>(false);
     debugFileProcessor = config["DEBUG_FILE_PROCESSOR"].as<bool>(false);
@@ -56,12 +58,14 @@ const std::unordered_map<int, TalkgroupFiles>& ConfigSingleton::getTalkgroupFile
 std::string ConfigSingleton::getDatabasePath() const { return databasePath; }
 std::string ConfigSingleton::getDirectoryToMonitor() const { return directoryToMonitor; }
 std::string ConfigSingleton::getOpenAIAPIKey() const { return openaiAPIKey; }
-int ConfigSingleton::getLoopWaitSeconds() const { return loopWaitSeconds; }
+int ConfigSingleton::getloopWaitMilliseconds() const { return loopWaitMilliseconds; }
 int ConfigSingleton::getMinDurationSeconds() const { return minDurationSeconds; }
 int ConfigSingleton::getMaxRetries() const { return maxRetries; }
 int ConfigSingleton::getMaxRequestsPerMinute() const { return maxRequestsPerMinute; }
 int ConfigSingleton::getErrorWindowSeconds() const { return errorWindowSeconds; }
 int ConfigSingleton::getRateLimitWindowSeconds() const { return rateLimitWindowSeconds; }
+int ConfigSingleton::getMaxProcessFileThreads() const { return maxProcessFileThreads; }
+int ConfigSingleton::getMaxTranscribeThreads() const { return maxTranscribeThreads; }
 bool ConfigSingleton::isDebugCurlHelper() const { return debugCurlHelper; }
 bool ConfigSingleton::isDebugDatabaseManager() const { return debugDatabaseManager; }
 bool ConfigSingleton::isDebugFileProcessor() const { return debugFileProcessor; }
