@@ -198,7 +198,7 @@ std::string extractActualTranscription(const std::string &transcription)
         std::cerr << "[" << getCurrentTime() << "] "
                   << "transcriptionProcessor.cpp extractActualTranscription Received transcription string: " << transcription << std::endl;
     }
-    static const std::regex text_regex("\"text\":\"([^\"]+)\"");
+    static const std::regex text_regex("\"text\"\\s*:\\s*\"([^\"]+)\"");
     std::smatch match;
     return std::regex_search(transcription, match, text_regex) && match.size() > 1 ? match.str(1) : "";
 }
