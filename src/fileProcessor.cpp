@@ -277,6 +277,7 @@ void extractFileInfo(FileData &fileData, const std::string &filename, const std:
 {
     std::smatch match;
     std::string talkgroupID, radioID;
+    int defaultID = 1234567; // Default integer value for NBFM usage
 
     // Regular expressions for talkgroupID with and without 'P_' prefix
     std::regex rgx_talkgroup_P("TO_P_(\\d+)");
@@ -285,27 +286,31 @@ void extractFileInfo(FileData &fileData, const std::string &filename, const std:
     std::regex rgx_radio("_FROM_(\\d+)");
 
     // Determine which regex to use based on whether the filename contains 'P_'
-    if (filename.find("TO_P_") != std::string::npos) {
-        if (std::regex_search(filename, match, rgx_talkgroup_P) && match.size() > 1) {
-            talkgroupID = match[1].str();
-        }
-    } else {
-        if (std::regex_search(filename, match, rgx_talkgroup) && match.size() > 1) {
-            talkgroupID = match[1].str();
-        }
+    if (std::regex_search(filename, match, filename.find("TO_P_") != std::string::npos ? rgx_talkgroup_P : rgx_talkgroup) && match.size() > 1)
+    {
+        talkgroupID = match[1].str();
+    }
+    else
+    {
+        talkgroupID = std::to_string(defaultID); // Set to default value
     }
 
-    // Extract radioID
-    if (std::regex_search(filename, match, rgx_radio) && match.size() > 1) {
+    // Use a single regex search for radioID
+    if (std::regex_search(filename, match, rgx_radio) && match.size() > 1)
+    {
         radioID = match[1].str();
+    }
+    else
+    {
+        radioID = std::to_string(defaultID); // Set to default value
     }
     // Extract variables from filename
     std::string date = filename.substr(0, 8);
     std::string time = filename.substr(9, 6);
     std::cout << "[" << getCurrentTime() << "] "
-                      << "fileProcessor.cpp extractFileInfo RID: " << radioID << std::endl;
+              << "fileProcessor.cpp extractFileInfo RID: " << radioID << std::endl;
     std::cout << "[" << getCurrentTime() << "] "
-                      << "fileProcessor.cpp extractFileInfo TGID: " << talkgroupID << std::endl;
+              << "fileProcessor.cpp extractFileInfo TGID: " << talkgroupID << std::endl;
     fileData.radioID = std::stoi(radioID);
     fileData.talkgroupID = std::stoi(talkgroupID);
     fileData.date = date;
@@ -315,10 +320,10 @@ void extractFileInfo(FileData &fileData, const std::string &filename, const std:
     fileData.transcription = transcription;
 
     // Retrieve the talkgroupFiles map from ConfigSingleton
-    const auto& talkgroupFiles = ConfigSingleton::getInstance().getTalkgroupFiles();
+    const auto &talkgroupFiles = ConfigSingleton::getInstance().getTalkgroupFiles();
     fileData.v2transcription = generateV2Transcription(
-        transcription, 
-        fileData.talkgroupID, 
+        transcription,
+        fileData.talkgroupID,
         fileData.radioID,
         talkgroupFiles);
 }
@@ -397,13 +402,16 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
         }
         fileData.filepath = file_path;
         std::string transcription;
-        if (gLocalFlag) {
+        if (gLocalFlag)
+        {
             std::cout << "[" << getCurrentTime() << "] "
-                    << "fileProcessor.cpp processFile gLocalFlag " << gLocalFlag << std::endl;
+                      << "fileProcessor.cpp processFile gLocalFlag " << gLocalFlag << std::endl;
             transcription = transcribeAudioLocal(file_path);
-        } else {
+        }
+        else
+        {
             std::cout << "[" << getCurrentTime() << "] "
-                    << "fileProcessor.cpp processFile gLocalFlag " << gLocalFlag << std::endl;
+                      << "fileProcessor.cpp processFile gLocalFlag " << gLocalFlag << std::endl;
             transcription = transcribeAudio(file_path, OPENAI_API_KEY);
         }
         extractFileInfo(fileData, path.filename().string(), transcription);
