@@ -241,6 +241,11 @@ bool skipFile(const std::string &file_path)
 float validateDuration(const std::string &file_path, FileData &fileData)
 {
     std::string durationStr = getMP3Duration(file_path);
+    if (ConfigSingleton::getInstance().isDebugFileProcessor())
+    {
+        std::cout << "[" << getCurrentTime() << "] "
+                  << "fileProcessor.cpp validateDuration var durationStr: " << durationStr << std::endl;
+    }
     float duration = std::stof(durationStr);
     fileData.duration = durationStr; // Set the duration in FileData
 
@@ -249,7 +254,7 @@ float validateDuration(const std::string &file_path, FileData &fileData)
     if (ConfigSingleton::getInstance().isDebugFileProcessor())
     {
         std::cout << "[" << getCurrentTime() << "] "
-                  << "fileProcessor.cpp validateDuration file duration: " << duration << std::endl;
+                  << "fileProcessor.cpp validateDuration var duration: " << duration << std::endl;
     }
 
     if (duration < minDuration)
