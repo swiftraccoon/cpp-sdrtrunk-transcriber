@@ -1,5 +1,5 @@
 # Use the latest Ubuntu LTS version as the base image
-FROM ubuntu:latest AS builder
+FROM ubuntu:24.10 AS builder
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
