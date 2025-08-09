@@ -37,8 +37,8 @@ jobs:
           # Windows 2022 with MSVC
           - os: windows-2022
             compiler: msvc
-          # Windows 2019 with MSVC
-          - os: windows-2019
+          # Windows latest with MSVC (future-proof)
+          - os: windows-latest
             compiler: msvc
 
     steps:

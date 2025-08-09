@@ -22,6 +22,7 @@ if(NOT GTest_FOUND AND NOT TARGET gtest)
     # Disable pthreads on Windows
     if(WIN32)
         set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
+        add_compile_definitions(GTEST_HAS_PTHREAD=0)
     endif()
     
     # Enable GMock for mocking support
@@ -142,7 +143,7 @@ target_compile_features(runTests PRIVATE cxx_std_17)
 target_compile_definitions(runTests PRIVATE
     $<$<CONFIG:Debug>:DEBUG>
     $<$<CONFIG:Release>:NDEBUG>
-    GTEST_HAS_PTHREAD=1
+    $<$<NOT:$<PLATFORM_ID:Windows>>:GTEST_HAS_PTHREAD=1>
     $<$<BOOL:${BENCHMARK_AVAILABLE}>:BENCHMARK_AVAILABLE>
 )
 
@@ -150,7 +151,7 @@ if(BENCHMARK_AVAILABLE)
     target_compile_definitions(perfTests PRIVATE
         $<$<CONFIG:Debug>:DEBUG>
         $<$<CONFIG:Release>:NDEBUG>
-        GTEST_HAS_PTHREAD=1
+        $<$<NOT:$<PLATFORM_ID:Windows>>:GTEST_HAS_PTHREAD=1>
         BENCHMARK_AVAILABLE
     )
 endif()
