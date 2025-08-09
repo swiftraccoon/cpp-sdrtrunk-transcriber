@@ -9,6 +9,7 @@
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include <cstdlib>
 
 // Third-Party Library Headers
 #include <yaml-cpp/yaml.h>
@@ -17,6 +18,18 @@
 // Project-Specific Headers
 #include "FileData.h"
 #include "TestMocks.h"
+
+// Cross-platform temporary directory helper
+inline std::string getTempDir() {
+#ifdef _WIN32
+    const char* temp = std::getenv("TEMP");
+    if (!temp) temp = std::getenv("TMP");
+    if (!temp) temp = "C:\\Windows\\Temp";
+    return std::string(temp) + "\\";
+#else
+    return "/tmp/";
+#endif
+}
 
 // =============================================================================
 // TEST DATA GENERATORS
@@ -57,7 +70,7 @@ public:
         YAML::Node config;
         config["OPENAI_API_KEY"] = "test-api-key-12345";
         config["DATABASE_PATH"] = ":memory:";
-        config["DirectoryToMonitor"] = "/tmp/test_monitor";
+        config["DirectoryToMonitor"] = getTempDir() + "test_monitor";
         config["LoopWaitSeconds"] = 5;
         config["MAX_RETRIES"] = 3;
         config["MAX_REQUESTS_PER_MINUTE"] = 60;
@@ -78,15 +91,15 @@ public:
         // NCSHP configuration
         YAML::Node ncshpConfig;
         YAML::Node ncshpGlossary;
-        ncshpGlossary.push_back("/tmp/ncshp_glossary.json");
-        ncshpGlossary.push_back("/tmp/law_enforcement.json");
+        ncshpGlossary.push_back(getTempDir() + "ncshp_glossary.json");
+        ncshpGlossary.push_back(getTempDir() + "law_enforcement.json");
         ncshpConfig["GLOSSARY"] = ncshpGlossary;
         talkgroupFiles["52198-52250"] = ncshpConfig;
         
         // Default configuration
         YAML::Node defaultConfig;
         YAML::Node defaultGlossary;
-        defaultGlossary.push_back("/tmp/default_glossary.json");
+        defaultGlossary.push_back(getTempDir() + "default_glossary.json");
         defaultConfig["GLOSSARY"] = defaultGlossary;
         talkgroupFiles["*"] = defaultConfig;
         
@@ -158,7 +171,7 @@ public:
         data.radioID = radioID;
         data.duration = "00:05.123";
         data.filename = generateP25Filename(2024, 1, 15, 14, 30, 45, talkgroupID, radioID);
-        data.filepath = "/tmp/test_audio/" + data.filename;
+        data.filepath = getTempDir() + "test_audio/" + data.filename;
         data.transcription = transcription;
         data.v2transcription = "{\"" + std::to_string(radioID) + "\":\"" + transcription + "\"}";
         return data;
@@ -207,7 +220,7 @@ public:
     }
     
     std::string createTempFile(const std::string& filename, const std::string& content) {
-        std::string fullPath = "/tmp/" + filename;
+        std::string fullPath = getTempDir() + filename;
         std::ofstream file(fullPath);
         file << content;
         file.close();
@@ -216,7 +229,7 @@ public:
     }
     
     std::string createTempBinaryFile(const std::string& filename, const std::vector<unsigned char>& data) {
-        std::string fullPath = "/tmp/" + filename;
+        std::string fullPath = getTempDir() + filename;
         std::ofstream file(fullPath, std::ios::binary);
         file.write(reinterpret_cast<const char*>(data.data()), data.size());
         file.close();
@@ -225,7 +238,7 @@ public:
     }
     
     std::string createTempDirectory(const std::string& dirname) {
-        std::string fullPath = "/tmp/" + dirname;
+        std::string fullPath = getTempDir() + dirname;
         std::filesystem::create_directories(fullPath);
         createdDirectories.push_back(fullPath);
         return fullPath;
@@ -243,7 +256,7 @@ public:
     }
     
     std::string getCreatedFilePath(const std::string& filename) const {
-        return "/tmp/" + filename;
+        return getTempDir() + filename;
     }
 };
 

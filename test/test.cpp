@@ -21,13 +21,27 @@
 #include "fasterWhisper.h"
 #include "FileData.h"
 #include "globalFlags.h"
+#include <cstdlib>
 
 // Test environment globals
 std::string TEST_OPENAI_API_KEY = "test-api-key";
 std::string TEST_DB_PATH = ":memory:";
-std::string TEST_CONFIG_PATH = "/tmp/test_config.yaml";
-std::string TEST_GLOSSARY_PATH = "/tmp/test_glossary.json";
-std::string TEST_AUDIO_PATH = "/tmp/test_audio.mp3";
+
+// Cross-platform temporary directory helper
+std::string getTempDir() {
+#ifdef _WIN32
+    const char* temp = std::getenv("TEMP");
+    if (!temp) temp = std::getenv("TMP");
+    if (!temp) temp = "C:\\Windows\\Temp";
+    return std::string(temp) + "\\";
+#else
+    return "/tmp/";
+#endif
+}
+
+std::string TEST_CONFIG_PATH = getTempDir() + "test_config.yaml";
+std::string TEST_GLOSSARY_PATH = getTempDir() + "test_glossary.json";
+std::string TEST_AUDIO_PATH = getTempDir() + "test_audio.mp3";
 
 // Define missing global flag for tests
 bool gLocalFlag = false;
@@ -39,7 +53,7 @@ public:
         YAML::Node config;
         config["OPENAI_API_KEY"] = TEST_OPENAI_API_KEY;
         config["DATABASE_PATH"] = TEST_DB_PATH;
-        config["DirectoryToMonitor"] = "/tmp/test_monitor";
+        config["DirectoryToMonitor"] = getTempDir() + "test_monitor";
         config["LoopWaitSeconds"] = 5;
         config["MAX_RETRIES"] = 3;
         config["MAX_REQUESTS_PER_MINUTE"] = 60;
@@ -55,7 +69,7 @@ public:
         YAML::Node talkgroupFiles;
         YAML::Node talkgroup;
         YAML::Node glossary;
-        glossary.push_back("/tmp/test_glossary.json");
+        glossary.push_back(TEST_GLOSSARY_PATH);
         talkgroup["GLOSSARY"] = glossary;
         talkgroupFiles["52198"] = talkgroup;
         config["TALKGROUP_FILES"] = talkgroupFiles;
@@ -171,7 +185,7 @@ TEST_F(DatabaseManagerTest, CreateTable) {
 TEST_F(DatabaseManagerTest, InsertRecording) {
     EXPECT_NO_THROW(dbManager->insertRecording(
         "2024-01-15", "14:30:45", 1705330245, 52198, "NCSHP", 
-        12345, "00:05.123", "test.mp3", "/tmp/test.mp3", 
+        12345, "00:05.123", "test.mp3", (getTempDir() + "test.mp3").c_str(), 
         "Test transcription", "{\"12345\":\"Test transcription\"}"
     ));
 }
@@ -190,7 +204,7 @@ protected:
     std::string testFilePath;
     
     void SetUp() override {
-        testDir = "/tmp/test_monitor";
+        testDir = getTempDir() + "test_monitor";
         std::filesystem::create_directories(testDir);
         
         std::string filename = TestUtils::createTestFilename();
@@ -441,7 +455,7 @@ TEST(FileDataTest, StructInitialization) {
     data.radioID = 12345;
     data.duration = "00:05.123";
     data.filename = "test.mp3";
-    data.filepath = "/tmp/test.mp3";
+    data.filepath = getTempDir() + "test.mp3";
     data.transcription = "Test transcription";
     data.v2transcription = "{\"12345\":\"Test transcription\"}";
     
@@ -461,8 +475,8 @@ protected:
     std::string configPath;
     
     void SetUp() override {
-        configPath = "/tmp/integration_config.yaml";
-        testDir = "/tmp/integration_test";
+        configPath = getTempDir() + "integration_config.yaml";
+        testDir = getTempDir() + "integration_test";
         
         TestUtils::createTestConfig(configPath);
         TestUtils::createTestGlossary(TEST_GLOSSARY_PATH);
