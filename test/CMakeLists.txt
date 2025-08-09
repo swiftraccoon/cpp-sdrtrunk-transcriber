@@ -19,6 +19,11 @@ if(NOT GTest_FOUND AND NOT TARGET gtest)
     # For Windows: Prevent overriding the parent project's compiler/linker settings
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     
+    # Disable pthreads on Windows
+    if(WIN32)
+        set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
+    endif()
+    
     # Enable GMock for mocking support
     set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
     set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
