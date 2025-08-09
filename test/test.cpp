@@ -28,7 +28,7 @@ std::string TEST_OPENAI_API_KEY = "test-api-key";
 std::string TEST_DB_PATH = ":memory:";
 
 // Cross-platform temporary directory helper
-std::string getTempDir() {
+inline std::string getTempDir() {
 #ifdef _WIN32
     const char* temp = std::getenv("TEMP");
     if (!temp) temp = std::getenv("TMP");
