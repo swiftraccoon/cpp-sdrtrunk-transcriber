@@ -8,15 +8,68 @@ set(FETCHCONTENT_QUIET FALSE)
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 
 # CURL - Required for HTTP requests
-find_package(CURL REQUIRED)
-if(NOT CURL_FOUND)
-    message(FATAL_ERROR "CURL is required but not found. Please install libcurl-dev or equivalent.")
+if(WIN32)
+    # On Windows, always use FetchContent for CURL if not using vcpkg
+    if(NOT DEFINED CMAKE_TOOLCHAIN_FILE OR NOT CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
+        message(STATUS "Using FetchContent for CURL on Windows")
+        FetchContent_Declare(
+            curl
+            GIT_REPOSITORY https://github.com/curl/curl.git
+            GIT_TAG curl-8_5_0
+            GIT_SHALLOW TRUE
+        )
+        set(BUILD_CURL_EXE OFF CACHE BOOL "")
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+        set(CURL_ENABLE_SSL ON CACHE BOOL "")
+        set(CURL_USE_SCHANNEL ON CACHE BOOL "")  # Use Windows SSL
+        set(BUILD_TESTING OFF CACHE BOOL "")
+        FetchContent_MakeAvailable(curl)
+        if(NOT TARGET CURL::libcurl)
+            add_library(CURL::libcurl ALIAS libcurl)
+        endif()
+        set(CURL_FOUND TRUE)
+    else()
+        find_package(CURL REQUIRED)
+    endif()
+else()
+    find_package(CURL REQUIRED)
+    if(NOT CURL_FOUND)
+        message(FATAL_ERROR "CURL is required but not found. Please install libcurl-dev or equivalent.")
+    endif()
 endif()
 
 # SQLite3 - Required for database operations
-find_package(SQLite3 REQUIRED)
-if(NOT SQLite3_FOUND)
-    message(FATAL_ERROR "SQLite3 is required but not found. Please install libsqlite3-dev or equivalent.")
+if(WIN32)
+    # On Windows, use FetchContent for SQLite3 if not using vcpkg
+    if(NOT DEFINED CMAKE_TOOLCHAIN_FILE OR NOT CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
+        message(STATUS "Using FetchContent for SQLite3 on Windows")
+        FetchContent_Declare(
+            sqlite3
+            URL https://www.sqlite.org/2024/sqlite-amalgamation-3450000.zip
+            URL_HASH SHA256=bde30d13ebdf84926ddd5e8b6df145be03a577a48fd075a087a5dd815bcdf740
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        )
+        FetchContent_MakeAvailable(sqlite3)
+        
+        # Create SQLite3 library target
+        add_library(sqlite3 STATIC ${sqlite3_SOURCE_DIR}/sqlite3.c)
+        target_include_directories(sqlite3 PUBLIC ${sqlite3_SOURCE_DIR})
+        add_library(SQLite::SQLite3 ALIAS sqlite3)
+        set(SQLite3_FOUND TRUE)
+    else()
+        find_package(unofficial-sqlite3 CONFIG QUIET)
+        if(TARGET unofficial::sqlite3::sqlite3)
+            add_library(SQLite::SQLite3 ALIAS unofficial::sqlite3::sqlite3)
+            set(SQLite3_FOUND TRUE)
+        else()
+            find_package(SQLite3 REQUIRED)
+        endif()
+    endif()
+else()
+    find_package(SQLite3 REQUIRED)
+    if(NOT SQLite3_FOUND AND NOT TARGET SQLite::SQLite3)
+        message(FATAL_ERROR "SQLite3 is required but not found. Please install libsqlite3-dev or equivalent.")
+    endif()
 endif()
 
 # yaml-cpp - YAML parsing library
