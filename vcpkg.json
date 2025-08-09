@@ -6,6 +6,7 @@
   "homepage": "https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber",
   "documentation": "https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/blob/main/README.md",
   "license": "GPL-3.0",
+  "builtin-baseline": "d30fdf55cfca16e12bc3ad99cbc615997014b61b",
   "dependencies": [
     {
       "name": "curl",
