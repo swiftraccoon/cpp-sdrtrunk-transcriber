@@ -33,7 +33,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          .\vcpkg\vcpkg install curl:x64-windows sqlite3:x64-windows
+          .\vcpkg\vcpkg install
         shell: cmd
 
       - name: Cache vcpkg packages
