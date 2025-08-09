@@ -1,0 +1,190 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 16,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default configuration",
+      "description": "Default build configuration with system dependencies",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTS": "ON",
+        "USE_SYSTEM_DEPS": "ON",
+        "ENABLE_INSTALL": "ON",
+        "ENABLE_PACKAGING": "ON"
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Debug configuration",
+      "description": "Debug build with all warnings and sanitizers",
+      "binaryDir": "${sourceDir}/build-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_TESTS": "ON",
+        "USE_SYSTEM_DEPS": "ON",
+        "ENABLE_INSTALL": "OFF",
+        "ENABLE_PACKAGING": "OFF",
+        "ENABLE_COVERAGE": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release configuration",
+      "description": "Optimized release build for production",
+      "binaryDir": "${sourceDir}/build-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTS": "ON",
+        "USE_SYSTEM_DEPS": "ON",
+        "ENABLE_INSTALL": "ON",
+        "ENABLE_PACKAGING": "ON"
+      }
+    },
+    {
+      "name": "vcpkg",
+      "displayName": "vcpkg configuration",
+      "description": "Build using vcpkg dependencies (recommended for Windows)",
+      "binaryDir": "${sourceDir}/build-vcpkg",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTS": "ON",
+        "USE_SYSTEM_DEPS": "OFF",
+        "ENABLE_INSTALL": "ON",
+        "ENABLE_PACKAGING": "ON"
+      },
+      "condition": {
+        "type": "notEquals",
+        "lhs": "$env{VCPKG_ROOT}",
+        "rhs": ""
+      }
+    },
+    {
+      "name": "bundled",
+      "displayName": "Bundled dependencies",
+      "description": "Build using FetchContent for all dependencies",
+      "binaryDir": "${sourceDir}/build-bundled",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTS": "ON",
+        "USE_SYSTEM_DEPS": "OFF",
+        "ENABLE_INSTALL": "ON",
+        "ENABLE_PACKAGING": "ON"
+      }
+    },
+    {
+      "name": "sanitizer",
+      "displayName": "Sanitizer build",
+      "description": "Debug build with AddressSanitizer and UBSan",
+      "binaryDir": "${sourceDir}/build-sanitizer",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_TESTS": "ON",
+        "USE_SYSTEM_DEPS": "ON",
+        "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined"
+      },
+      "condition": {
+        "type": "matches",
+        "string": "${hostSystemName}",
+        "regex": "Linux|Darwin"
+      }
+    },
+    {
+      "name": "windows-vs2022",
+      "displayName": "Windows Visual Studio 2022",
+      "description": "Windows build with Visual Studio 2022",
+      "binaryDir": "${sourceDir}/build-windows",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTS": "ON",
+        "USE_SYSTEM_DEPS": "OFF",
+        "ENABLE_INSTALL": "ON",
+        "ENABLE_PACKAGING": "ON"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default",
+      "displayName": "Default build"
+    },
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "displayName": "Debug build"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "displayName": "Release build"
+    },
+    {
+      "name": "vcpkg",
+      "configurePreset": "vcpkg",
+      "displayName": "vcpkg build"
+    },
+    {
+      "name": "bundled",
+      "configurePreset": "bundled",
+      "displayName": "Bundled dependencies build"
+    },
+    {
+      "name": "sanitizer",
+      "configurePreset": "sanitizer",
+      "displayName": "Sanitizer build"
+    },
+    {
+      "name": "windows-vs2022",
+      "configurePreset": "windows-vs2022",
+      "displayName": "Windows Visual Studio 2022 build"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default",
+      "displayName": "Default tests",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "displayName": "Debug tests",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    },
+    {
+      "name": "sanitizer",
+      "configurePreset": "sanitizer",
+      "displayName": "Sanitizer tests",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      },
+      "environment": {
+        "ASAN_OPTIONS": "detect_leaks=1:abort_on_error=1",
+        "UBSAN_OPTIONS": "print_stacktrace=1:abort_on_error=1"
+      }
+    }
+  ]
+}

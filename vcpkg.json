@@ -1,0 +1,56 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "name": "sdrtrunk-transcriber",
+  "version": "1.0.0",
+  "description": "C++ application for transcribing SDRTrunk P25 recordings",
+  "homepage": "https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber",
+  "documentation": "https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/blob/main/README.md",
+  "license": "GPL-3.0",
+  "dependencies": [
+    {
+      "name": "curl",
+      "version>=": "8.0.0",
+      "features": [
+        "ssl",
+        "openssl"
+      ]
+    },
+    {
+      "name": "sqlite3",
+      "version>=": "3.40.0"
+    },
+    {
+      "name": "yaml-cpp",
+      "version>=": "0.8.0"
+    },
+    {
+      "name": "cli11",
+      "version>=": "2.3.0"
+    },
+    {
+      "name": "nlohmann-json",
+      "version>=": "3.11.0"
+    }
+  ],
+  "features": {
+    "tests": {
+      "description": "Build with testing support",
+      "dependencies": [
+        {
+          "name": "gtest",
+          "version>=": "1.14.0"
+        }
+      ]
+    },
+    "whisper": {
+      "description": "Whisper.cpp integration support",
+      "dependencies": [
+        {
+          "name": "whisper-cpp",
+          "version>=": "1.4.0"
+        }
+      ]
+    }
+  },
+  "builtin-baseline": "2024.01.12"
+}

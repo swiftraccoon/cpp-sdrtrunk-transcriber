@@ -1,0 +1,146 @@
+name: CI Matrix
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  test-matrix:
+    name: ${{ matrix.os }}-${{ matrix.compiler }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 22.04 with GCC 11
+          - os: ubuntu-22.04
+            compiler: gcc-11
+            cc: gcc-11
+            cxx: g++-11
+          # Ubuntu 22.04 with Clang 14
+          - os: ubuntu-22.04
+            compiler: clang-14
+            cc: clang-14
+            cxx: clang++-14
+          # Ubuntu latest with default compiler
+          - os: ubuntu-latest
+            compiler: gcc
+            cc: gcc
+            cxx: g++
+          # Windows 2022 with MSVC
+          - os: windows-2022
+            compiler: msvc
+          # Windows 2019 with MSVC
+          - os: windows-2019
+            compiler: msvc
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup compiler (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        if [[ "${{ matrix.compiler }}" == "gcc-11" ]]; then
+          sudo apt-get update
+          sudo apt-get install -y gcc-11 g++-11
+        elif [[ "${{ matrix.compiler }}" == "clang-14" ]]; then
+          sudo apt-get update
+          sudo apt-get install -y clang-14
+        fi
+        echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+        echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+
+    - name: Install dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          ffmpeg \
+          libavcodec-dev \
+          libavutil-dev \
+          libavformat-dev \
+          libcurl4-openssl-dev \
+          libsqlite3-dev \
+          pkg-config \
+          libyaml-cpp-dev
+
+    - name: Setup MSVC (Windows)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Setup vcpkg (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        git clone https://github.com/Microsoft/vcpkg.git
+        .\vcpkg\bootstrap-vcpkg.bat
+        .\vcpkg\vcpkg integrate install
+      shell: pwsh
+
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .\vcpkg\vcpkg install curl:x64-windows sqlite3:x64-windows yaml-cpp:x64-windows
+      shell: pwsh
+
+    - name: Setup external dependencies
+      run: |
+        if [ ! -d "external/yaml-cpp/.git" ]; then
+          git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
+        fi
+        if [ ! -d "external/CLI11/.git" ]; then
+          git clone https://github.com/CLIUtils/CLI11.git external/CLI11
+        fi
+      shell: bash
+
+    - name: Configure CMake (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+          -DBUILD_TESTS=ON \
+          -G Ninja
+
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cmake -B build `
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+          -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+          -DVCPKG_TARGET_TRIPLET=x64-windows `
+          -DBUILD_TESTS=ON
+      shell: pwsh
+
+    - name: Build
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+    - name: Test
+      working-directory: build
+      run: ctest -C ${{ env.BUILD_TYPE }} --output-on-failure
+      continue-on-error: true
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}-${{ matrix.compiler }}
+        path: |
+          build/Testing/
+          build/test/
+        retention-days: 7

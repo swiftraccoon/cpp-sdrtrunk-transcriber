@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🤔 General Questions & Discussions
+    url: https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/discussions
+    about: Ask questions, share ideas, or discuss the project with the community
+  - name: 📖 Documentation
+    url: https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/tree/main/docs
+    about: Check the documentation for build instructions, API reference, and troubleshooting
+  - name: 🔧 Build Issues
+    url: https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/blob/main/docs/BUILD.md
+    about: Review the comprehensive build guide before reporting build-related issues
+  - name: 📋 Project Wiki
+    url: https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/wiki
+    about: Additional documentation, examples, and community contributions
