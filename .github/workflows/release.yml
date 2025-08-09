@@ -122,7 +122,7 @@ jobs:
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
-        .\vcpkg\vcpkg install curl:x64-windows sqlite3:x64-windows yaml-cpp:x64-windows
+        .\vcpkg\vcpkg install curl:x64-windows sqlite3:x64-windows
       shell: pwsh
 
     - name: Setup external dependencies
