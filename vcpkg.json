@@ -10,27 +10,22 @@
   "dependencies": [
     {
       "name": "curl",
-      "version>=": "8.0.0",
       "features": [
         "ssl",
         "openssl"
       ]
     },
     {
-      "name": "sqlite3",
-      "version>=": "3.40.0"
+      "name": "sqlite3"
     },
     {
-      "name": "yaml-cpp",
-      "version>=": "0.8.0"
+      "name": "yaml-cpp"
     },
     {
-      "name": "cli11",
-      "version>=": "2.3.2"
+      "name": "cli11"
     },
     {
-      "name": "nlohmann-json",
-      "version>=": "3.11.0"
+      "name": "nlohmann-json"
     }
   ],
   "features": {
@@ -38,8 +33,7 @@
       "description": "Build with testing support",
       "dependencies": [
         {
-          "name": "gtest",
-          "version>=": "1.14.0"
+          "name": "gtest"
         }
       ]
     },
@@ -47,8 +41,7 @@
       "description": "Whisper.cpp integration support",
       "dependencies": [
         {
-          "name": "whisper-cpp",
-          "version>=": "1.4.0"
+          "name": "whisper-cpp"
         }
       ]
     }
