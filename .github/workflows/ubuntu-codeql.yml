@@ -19,7 +19,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: 'recursive'
     
@@ -29,25 +29,40 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ffmpeg libavcodec-dev libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ffmpeg \
+          libavcodec-dev \
+          libavutil-dev \
+          libavformat-dev \
+          libcurl4-openssl-dev \
+          libsqlite3-dev \
+          pkg-config \
+          libyaml-cpp-dev
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v3
       with:
         languages: 'cpp'
 
     - name: Build
-      run: | 
-        mkdir build
-        cd external
-        git clone https://github.com/jbeder/yaml-cpp.git yaml-cpp
-        git clone https://github.com/CLIUtils/CLI11.git CLI11
-        cd ..
+      run: |
+        # Setup external dependencies
+        if [ ! -d "external/yaml-cpp/.git" ]; then
+          git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
+        fi
+        if [ ! -d "external/CLI11/.git" ]; then
+          git clone https://github.com/CLIUtils/CLI11.git external/CLI11
+        fi
+        
+        # Configure and build
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
+        cmake --build build --parallel
+        
+        # Copy config for tests
         cp sample-config.yaml build/config.yaml
-        cd build
-        cmake ..
-        make
-        touch recordings.db
+        touch build/recordings.db
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v3

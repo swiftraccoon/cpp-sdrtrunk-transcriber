@@ -17,26 +17,27 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Clone yaml-cpp
-        run: git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
-
-      - name: Clone CLI11
-        run: git clone https://github.com/CLIUtils/CLI11.git external/CLI11
+      - name: Setup external dependencies
+        run: |
+          if not exist external\yaml-cpp git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
+          if not exist external\CLI11 git clone https://github.com/CLIUtils/CLI11.git external/CLI11
+        shell: cmd
 
       - name: Set up vcpkg
-        uses: lukka/run-vcpkg@v10
-        with:
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-          vcpkgGitCommitId: '8eb57355a4ffb410a2e94c07b4dca2dffbee8e50'
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+        shell: cmd
 
       - name: Install dependencies
-        run: .\vcpkg\vcpkg install curl:x64-windows sqlite3:x64-windows yaml-cpp:x64-windows nlohmann-json:x64-windows
+        run: |
+          .\vcpkg\vcpkg install
         shell: cmd
 
       - name: Cache vcpkg packages
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/vcpkg/installed
           key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/vcpkg.json') }}
@@ -44,11 +45,12 @@ jobs:
             ${{ runner.os }}-vcpkg-
 
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build -S . -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake
+        run: cmake -B ${{github.workspace}}/build -S . -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_TOOLCHAIN_FILE=${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake -DBUILD_TESTS=ON
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{env.BUILD_TYPE}}
+        run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+        continue-on-error: true

@@ -7,13 +7,13 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Variables
-SERVICE_NAME="sdrTrunkTranscriber"
-DESCRIPTION="service for sdrTrunkTranscriber to process mp3 files"
+SERVICE_NAME="sdrtrunk-transcriber"
+DESCRIPTION="SDRTrunk Transcriber service for processing P25 MP3 recordings"
 AFTER="network.target"
-EXEC_START="/home/user/bin/sdrTrunkTranscriber"
+EXEC_START="/usr/local/bin/sdrtrunk-transcriber"
 RESTART="always"
-USER="username"
-GROUP="groupname"
+USER="sdrtrunk"
+GROUP="sdrtrunk"
 
 # Create the unit file
 echo "[Unit]

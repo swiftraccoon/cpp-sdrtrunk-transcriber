@@ -1,0 +1,205 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release'
+        required: true
+        type: string
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_id: ${{ steps.create_release.outputs.id }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get tag name
+      id: get_tag
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+        else
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Get previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 ${{ steps.get_tag.outputs.tag }}^ 2>/dev/null || echo "")
+        
+        echo "## Changes in ${{ steps.get_tag.outputs.tag }}" > changelog.md
+        echo "" >> changelog.md
+        
+        if [ -n "$PREV_TAG" ]; then
+          echo "### Commits since $PREV_TAG" >> changelog.md
+          git log --pretty=format:"- %s (%h)" $PREV_TAG..${{ steps.get_tag.outputs.tag }} >> changelog.md
+        else
+          echo "### Initial Release" >> changelog.md
+          echo "- First release of cpp-sdrtrunk-transcriber" >> changelog.md
+        fi
+        
+        echo 'changelog<<EOF' >> $GITHUB_OUTPUT
+        cat changelog.md >> $GITHUB_OUTPUT
+        echo 'EOF' >> $GITHUB_OUTPUT
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get_tag.outputs.tag }}
+        release_name: Release ${{ steps.get_tag.outputs.tag }}
+        body: ${{ steps.changelog.outputs.changelog }}
+        draft: true
+        prerelease: false
+
+  build-release:
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux-x64
+            artifact_ext: tar.gz
+          - os: windows-latest
+            name: windows-x64
+            artifact_ext: zip
+          
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ffmpeg \
+          libavcodec-dev \
+          libavutil-dev \
+          libavformat-dev \
+          libcurl4-openssl-dev \
+          libsqlite3-dev \
+          pkg-config \
+          libyaml-cpp-dev
+
+    - name: Setup MSVC (Windows)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Setup vcpkg (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        git clone https://github.com/Microsoft/vcpkg.git
+        .\vcpkg\bootstrap-vcpkg.bat
+        .\vcpkg\vcpkg integrate install
+      shell: pwsh
+
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .\vcpkg\vcpkg install
+      shell: pwsh
+
+    - name: Setup external dependencies
+      run: |
+        if [ ! -d "external/yaml-cpp/.git" ]; then
+          git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
+        fi
+        if [ ! -d "external/CLI11/.git" ]; then
+          git clone https://github.com/CLIUtils/CLI11.git external/CLI11
+        fi
+      shell: bash
+
+    - name: Configure CMake (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DBUILD_TESTS=OFF \
+          -DENABLE_INSTALL=ON
+
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cmake -B build `
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+          -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+          -DVCPKG_TARGET_TRIPLET=x64-windows `
+          -DBUILD_TESTS=OFF `
+          -DENABLE_INSTALL=ON
+      shell: pwsh
+
+    - name: Build
+      run: cmake --build build --config ${{ env.BUILD_TYPE }} --parallel
+
+    - name: Package (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        mkdir -p release
+        cp build/sdrtrunk-transcriber* release/ 2>/dev/null || true
+        cp README.md LICENSE sample-config.yaml release/
+        cp -r scripts release/
+        tar -czf sdrtrunk-transcriber-${{ matrix.name }}.tar.gz -C release .
+
+    - name: Package (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        New-Item -ItemType Directory -Force -Path release
+        Copy-Item build/Release/sdrtrunk-transcriber* release/ -ErrorAction SilentlyContinue
+        Copy-Item build/sdrtrunk-transcriber* release/ -ErrorAction SilentlyContinue
+        Copy-Item README.md, LICENSE, sample-config.yaml release/
+        Copy-Item scripts -Recurse release/
+        Compress-Archive -Path release/* -DestinationPath sdrtrunk-transcriber-${{ matrix.name }}.zip
+      shell: pwsh
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./sdrtrunk-transcriber-${{ matrix.name }}.${{ matrix.artifact_ext }}
+        asset_name: sdrtrunk-transcriber-${{ matrix.name }}.${{ matrix.artifact_ext }}
+        asset_content_type: application/octet-stream
+
+  publish-release:
+    needs: [create-release, build-release]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Publish Release
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          await github.rest.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: '${{ needs.create-release.outputs.release_id }}',
+            draft: false
+          })
