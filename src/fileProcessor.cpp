@@ -248,8 +248,38 @@ float validateDuration(const std::string &file_path, FileData &fileData)
         std::cout << "[" << getCurrentTime() << "] "
                   << "fileProcessor.cpp validateDuration var durationStr: " << durationStr << std::endl;
     }
-    float duration = std::stof(durationStr);
-    fileData.duration = durationStr; // Set the duration in FileData
+    
+    // Handle empty or invalid duration strings
+    if (durationStr.empty()) {
+        if (ConfigSingleton::getInstance().isDebugFileProcessor()) {
+            std::cout << "[" << getCurrentTime() << "] "
+                      << "fileProcessor.cpp validateDuration: Empty duration string, setting to 0.0" << std::endl;
+        }
+        fileData.duration = "0.000";
+        return 0.0f;
+    }
+    
+    float duration = 0.0f;
+    try {
+        duration = std::stof(durationStr);
+        fileData.duration = durationStr; // Set the duration in FileData
+    } catch (const std::invalid_argument& e) {
+        if (ConfigSingleton::getInstance().isDebugFileProcessor()) {
+            std::cout << "[" << getCurrentTime() << "] "
+                      << "fileProcessor.cpp validateDuration: Invalid duration format '" << durationStr 
+                      << "', setting to 0.0" << std::endl;
+        }
+        fileData.duration = "0.000";
+        return 0.0f;
+    } catch (const std::out_of_range& e) {
+        if (ConfigSingleton::getInstance().isDebugFileProcessor()) {
+            std::cout << "[" << getCurrentTime() << "] "
+                      << "fileProcessor.cpp validateDuration: Duration out of range '" << durationStr 
+                      << "', setting to 0.0" << std::endl;
+        }
+        fileData.duration = "0.000";
+        return 0.0f;
+    }
 
     float minDuration = ConfigSingleton::getInstance().getMinDurationSeconds();
 

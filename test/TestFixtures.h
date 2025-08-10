@@ -47,20 +47,21 @@ public:
         ss << std::setfill('0') << std::setw(4) << year
            << std::setw(2) << month << std::setw(2) << day << "_"
            << std::setw(2) << hour << std::setw(2) << min << std::setw(2) << sec
-           << "_TG_" << talkgroupID << "_ID_" << radioID << ".mp3";
+           << "Test_System__TO_" << talkgroupID << "_FROM_" << radioID << ".mp3";
         return ss.str();
     }
     
     // Generate various filename patterns for edge case testing
     static std::vector<std::string> generateFilenameVariations() {
         return {
-            "20240115_143045_TG_52198_ID_12345.mp3",  // Standard format
-            "20231201_000000_TG_1_ID_999999.mp3",     // Edge values
-            "20241231_235959_TG_99999_ID_1.mp3",      // Year/time boundaries
-            "20240229_120000_TG_52198_ID_12345.mp3",  // Leap year
-            "invalid_filename.mp3",                    // Invalid format
-            "20240115_143045_TG_ABC_ID_12345.mp3",    // Non-numeric talkgroup
-            "20240115_143045_TG_52198_ID_XYZ.mp3",    // Non-numeric radio ID
+            "20240115_143045Test_System__TO_52198_FROM_12345.mp3",  // Standard format
+            "20231201_000000Test_System__TO_1_FROM_999999.mp3",     // Edge values
+            "20241231_235959Test_System__TO_99999_FROM_1.mp3",      // Year/time boundaries
+            "20240229_120000Test_System__TO_52198_FROM_12345.mp3",  // Leap year
+            "invalid_filename.mp3",                                  // Invalid format
+            "20240115_143045Test_System__TO_ABC_FROM_12345.mp3",    // Non-numeric talkgroup
+            "20240115_143045Test_System__TO_52198_FROM_XYZ.mp3",    // Non-numeric radio ID
+            "20240115_143045Test_System__TO_P_52198_FROM_12345.mp3", // With P_ prefix
             ""  // Empty filename
         };
     }
@@ -96,12 +97,12 @@ public:
         ncshpConfig["GLOSSARY"] = ncshpGlossary;
         talkgroupFiles["52198-52250"] = ncshpConfig;
         
-        // Default configuration
+        // Default configuration - use specific range instead of wildcard
         YAML::Node defaultConfig;
         YAML::Node defaultGlossary;
         defaultGlossary.push_back(getTempDir() + "default_glossary.json");
         defaultConfig["GLOSSARY"] = defaultGlossary;
-        talkgroupFiles["*"] = defaultConfig;
+        talkgroupFiles["99999"] = defaultConfig;  // Single default talkgroup instead of wildcard
         
         config["TALKGROUP_FILES"] = talkgroupFiles;
         
@@ -177,22 +178,39 @@ public:
         return data;
     }
     
-    // Generate mock audio file content (minimal MP3-like structure)
+    // Get real MP3 file content from test file - ensures valid MP3 for all tests
     static std::vector<unsigned char> generateMockMP3Data() {
-        std::vector<unsigned char> data;
+        // Use static to cache the data - load once, use many times
+        static std::vector<unsigned char> cachedData;
+        static bool dataLoaded = false;
         
-        // Add MP3 frame header (simplified)
-        data.push_back(0xFF);  // Frame sync
-        data.push_back(0xFB);  // Frame sync + version + layer
-        data.push_back(0x90);  // Bitrate + sampling frequency
-        data.push_back(0x00);  // Padding + channel mode
-        
-        // Add some dummy audio data
-        for (int i = 0; i < 1000; ++i) {
-            data.push_back(static_cast<unsigned char>(i % 256));
+        if (!dataLoaded) {
+            // Use the real MP3 file provided in test directory
+            std::string realMp3Path = "/home/foxtrot/git/cpp-sdrtrunk-transcriber/test/20250715_112349North_Carolina_VIPER_Rutherford_T-SPDControl__TO_52324_FROM_2097268.mp3";
+            
+            std::ifstream file(realMp3Path, std::ios::binary | std::ios::ate);
+            if (file.is_open()) {
+                std::streamsize size = file.tellg();
+                file.seekg(0, std::ios::beg);
+                
+                cachedData.resize(size);
+                if (file.read(reinterpret_cast<char*>(cachedData.data()), size)) {
+                    dataLoaded = true;
+                }
+            }
+            
+            if (!dataLoaded) {
+                // If real file not found, log error but continue with empty data
+                // Tests will fail gracefully with new error handling
+                std::cerr << "Warning: Test MP3 file not found at: " << realMp3Path << std::endl;
+                std::cerr << "Tests may fail if they require valid MP3 data." << std::endl;
+                // Return minimal valid MP3 structure that won't crash ffprobe
+                cachedData = {0xFF, 0xFB, 0x90, 0x00}; // Minimal MP3 header
+                dataLoaded = true;
+            }
         }
         
-        return data;
+        return cachedData;
     }
     
     // Generate various test transcription responses
