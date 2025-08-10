@@ -53,11 +53,8 @@ jobs:
           echo "- First release of cpp-sdrtrunk-transcriber" >> changelog.md
         fi
         
-        # Use a unique delimiter to avoid conflicts
-        EOF_MARKER=$(openssl rand -hex 16)
-        echo "changelog<<$EOF_MARKER" >> $GITHUB_OUTPUT
-        cat changelog.md >> $GITHUB_OUTPUT
-        echo "$EOF_MARKER" >> $GITHUB_OUTPUT
+        # Save changelog to file for later use
+        echo "changelog_file=changelog.md" >> $GITHUB_OUTPUT
 
     - name: Create Release
       id: create_release
@@ -65,7 +62,7 @@ jobs:
       with:
         tag_name: ${{ steps.get_tag.outputs.tag }}
         name: Release ${{ steps.get_tag.outputs.tag }}
-        body: ${{ steps.changelog.outputs.changelog }}
+        body_path: ${{ steps.changelog.outputs.changelog_file }}
         draft: true
         prerelease: false
         token: ${{ secrets.GITHUB_TOKEN }}
