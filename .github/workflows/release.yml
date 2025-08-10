@@ -53,21 +53,22 @@ jobs:
           echo "- First release of cpp-sdrtrunk-transcriber" >> changelog.md
         fi
         
-        echo 'changelog<<EOF' >> $GITHUB_OUTPUT
+        # Use a unique delimiter to avoid conflicts
+        EOF_MARKER=$(openssl rand -hex 16)
+        echo "changelog<<$EOF_MARKER" >> $GITHUB_OUTPUT
         cat changelog.md >> $GITHUB_OUTPUT
-        echo 'EOF' >> $GITHUB_OUTPUT
+        echo "$EOF_MARKER" >> $GITHUB_OUTPUT
 
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.get_tag.outputs.tag }}
-        release_name: Release ${{ steps.get_tag.outputs.tag }}
+        name: Release ${{ steps.get_tag.outputs.tag }}
         body: ${{ steps.changelog.outputs.changelog }}
         draft: true
         prerelease: false
+        token: ${{ secrets.GITHUB_TOKEN }}
 
   build-release:
     needs: create-release
