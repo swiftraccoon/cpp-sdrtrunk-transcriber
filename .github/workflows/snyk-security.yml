@@ -20,9 +20,11 @@ name: Snyk Security
 
 on:
   push:
-    branches: ["main" ]
+    branches: ["main"]
   pull_request:
     branches: ["main"]
+  schedule:
+    - cron: '0 2 * * 1' # Weekly on Monday at 2 AM UTC
 
 permissions:
   contents: read
@@ -35,7 +37,9 @@ jobs:
       actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Set up Snyk CLI to check for security issues
         # Snyk can be used to break the build when it detects security issues.
         # In this case we want to upload the SAST issues to GitHub Code Scanning
@@ -49,31 +53,52 @@ jobs:
             cmake \
             libcurl4-openssl-dev \
             libsqlite3-dev \
-            libyaml-cpp-dev
+            libyaml-cpp-dev \
+            pkg-config \
+            ffmpeg \
+            libavcodec-dev \
+            libavutil-dev \
+            libavformat-dev
 
-      - name: Run Snyk tests
+      # Run various Snyk tests
+      # All tests use continue-on-error to prevent workflow failure
+      # Results are still uploaded to GitHub Security tab
+
+      - name: Snyk Code test (SAST)
         env:
-          # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-        # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
-        # Use || true to not fail the pipeline
-      - name: Snyk Code test
-        run: snyk code test --sarif > snyk-code.sarif || true
+        run: |
+          if [ -n "$SNYK_TOKEN" ]; then
+            snyk code test --sarif > snyk-code.sarif || true
+          else
+            echo "SNYK_TOKEN not set, skipping Snyk Code test"
+            echo '{"version": "2.1.0", "runs": []}' > snyk-code.sarif
+          fi
         continue-on-error: true
 
-        # Runs Snyk Open Source (SCA) analysis and uploads result to Snyk.
-      - name: Snyk Open Source monitor
-        run: snyk monitor --all-projects || true
+      - name: Snyk Open Source test (SCA)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -n "$SNYK_TOKEN" ]; then
+            snyk test --all-projects || true
+          else
+            echo "SNYK_TOKEN not set, skipping Snyk Open Source test"
+          fi
         continue-on-error: true
 
-        # Runs Snyk Infrastructure as Code (IaC) analysis and uploads result to Snyk.
-        # Use || true to not fail the pipeline.
-      - name: Snyk IaC test and report  
-        run: snyk iac test --report || true
+      - name: Snyk Infrastructure as Code test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -n "$SNYK_TOKEN" ]; then
+            snyk iac test --report || true
+          else
+            echo "SNYK_TOKEN not set, skipping Snyk IaC test"
+          fi
         continue-on-error: true
 
-        # Skip Docker testing if no Dockerfile exists
+      # Container scanning (only if Dockerfile exists)
       - name: Check for Dockerfile
         id: dockerfile_exists
         run: |
@@ -88,13 +113,34 @@ jobs:
         run: docker build -t sdrtrunk-transcriber:test .
         continue-on-error: true
 
-      - name: Snyk Container monitor
+      - name: Snyk Container test
         if: steps.dockerfile_exists.outputs.exists == 'true'
-        run: snyk container monitor sdrtrunk-transcriber:test --file=Dockerfile || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -n "$SNYK_TOKEN" ]; then
+            snyk container test sdrtrunk-transcriber:test --file=Dockerfile || true
+          else
+            echo "SNYK_TOKEN not set, skipping Snyk Container test"
+          fi
         continue-on-error: true
 
-        # Push the Snyk Code results into GitHub Code Scanning tab
+      # Upload results to GitHub Code Scanning
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
           sarif_file: snyk-code.sarif
+          category: snyk-code
+
+      # Optional: Upload Snyk reports as artifacts
+      - name: Upload Snyk reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snyk-reports
+          path: |
+            snyk-code.sarif
+            .snyk
+          retention-days: 30
+          if-no-files-found: ignore
