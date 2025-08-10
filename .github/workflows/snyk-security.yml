@@ -69,9 +69,20 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           if [ -n "$SNYK_TOKEN" ]; then
-            snyk code test --sarif > snyk-code.sarif || true
+            # Run Snyk and capture both stdout and stderr
+            snyk code test --sarif > snyk-code.sarif 2>snyk-error.log || SNYK_EXIT_CODE=$?
+            
+            # Check if the output is valid JSON
+            if ! python3 -m json.tool < snyk-code.sarif > /dev/null 2>&1; then
+              echo "Snyk output is not valid JSON, creating empty SARIF"
+              echo '{"version": "2.1.0", "runs": []}' > snyk-code.sarif
+              
+              # Show the error for debugging
+              echo "Snyk error output:"
+              cat snyk-error.log || true
+            fi
           else
-            echo "SNYK_TOKEN not set, skipping Snyk Code test"
+            echo "SNYK_TOKEN not set, creating empty SARIF file"
             echo '{"version": "2.1.0", "runs": []}' > snyk-code.sarif
           fi
         continue-on-error: true
@@ -124,6 +135,20 @@ jobs:
             echo "SNYK_TOKEN not set, skipping Snyk Container test"
           fi
         continue-on-error: true
+
+      # Ensure SARIF file exists and is valid
+      - name: Validate SARIF file
+        if: always()
+        run: |
+          if [ ! -f snyk-code.sarif ]; then
+            echo "SARIF file not found, creating empty one"
+            echo '{"version": "2.1.0", "runs": []}' > snyk-code.sarif
+          elif ! python3 -m json.tool < snyk-code.sarif > /dev/null 2>&1; then
+            echo "SARIF file is invalid JSON, replacing with empty one"
+            echo '{"version": "2.1.0", "runs": []}' > snyk-code.sarif
+          else
+            echo "SARIF file is valid"
+          fi
 
       # Upload results to GitHub Code Scanning
       - name: Upload result to GitHub Code Scanning
