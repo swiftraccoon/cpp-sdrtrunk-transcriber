@@ -12,12 +12,12 @@
 [![Pull Requests](https://img.shields.io/github/issues-pr/swiftraccoon/cpp-sdrtrunk-transcriber)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/pulls)
 [![Contributors](https://img.shields.io/github/contributors/swiftraccoon/cpp-sdrtrunk-transcriber)](https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber/graphs/contributors)
 
-A high-performance C++ application designed to monitor directories for SDRTrunk P25 MP3 recordings, automatically transcribe them using either local [faster-whisper](https://github.com/SYSTRAN/faster-whisper) or OpenAI's API, and organize the results with intelligent talkgroup categorization and terminology translation.
+A C++ application designed to monitor directories for SDRTrunk P25 MP3 recordings, transcribe them using either local [faster-whisper](https://github.com/SYSTRAN/faster-whisper) or OpenAI's API, and organize the results with talkgroup categorization and terminology translation.
 
 ## Features at a Glance
 
 - **Dual Transcription Modes**: Local processing with faster-whisper or cloud-based with OpenAI API
-- **Intelligent File Processing**: Automatic parsing of SDRTrunk filename metadata
+- **File Processing**: Parsing of SDRTrunk filename metadata
 - **Database Management**: SQLite3 storage for transcriptions and metadata
 - **Terminology Translation**: Automatic tencode, signal, and callsign translation
 - **Cross-Platform**: Supports Linux and Windows (experimental)
