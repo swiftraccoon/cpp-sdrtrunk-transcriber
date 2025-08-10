@@ -59,6 +59,7 @@ set(TEST_SOURCES
     ../src/transcriptionProcessor.cpp
     ../src/debugUtils.cpp
     ../src/fasterWhisper.cpp
+    ../src/security.cpp
 )
 
 # Test source files
@@ -67,6 +68,7 @@ set(TEST_FILES
     SimplePerformanceTests.cpp
     IntegrationTests.cpp
     EdgeCaseTests.cpp
+    security_test.cpp
 )
 
 # Create main test executable

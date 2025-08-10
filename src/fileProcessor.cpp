@@ -14,6 +14,7 @@
 #include <thread>
 #include <vector>
 #include <sys/types.h>
+#include "security.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -79,8 +80,9 @@ std::string getMP3Duration(const std::string &mp3FilePath)
 {
 #ifdef _WIN32
     // Windows-specific implementation
-    // Command to execute
-    std::string command = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"" + mp3FilePath + "\"";
+    // Securely escape the file path to prevent command injection
+    std::string escapedPath = Security::escapeShellArg(mp3FilePath);
+    std::string command = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " + escapedPath;
 
     // Create a pipe for the child process's STDOUT
     SECURITY_ATTRIBUTES saAttr;
@@ -379,6 +381,14 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
 {
     try
     {
+        // Validate that the file path is within the allowed directory (prevents path traversal)
+        if (!Security::isPathSafe(path, directoryToMonitor)) {
+            std::cerr << "[" << getCurrentTime() << "] "
+                      << "Security: Rejected file outside allowed directory: " << path << std::endl;
+            FileData emptyData;
+            return emptyData;
+        }
+        
         FileData fileData;
         std::string file_path = path.string();
         if (ConfigSingleton::getInstance().isDebugFileProcessor())

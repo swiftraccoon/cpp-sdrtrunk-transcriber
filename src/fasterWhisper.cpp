@@ -2,6 +2,7 @@
 #include <string>
 #include <array>
 #include <memory>
+#include "security.h"
 // Include necessary headers for Windows
 #ifdef _WIN32
 #include <stdio.h>
@@ -22,7 +23,9 @@ std::string trim(const std::string &str)
 
 std::string local_transcribe_audio(const std::string &mp3FilePath)
 {
-    std::string command = "python fasterWhisper.py " + mp3FilePath;
+    // Securely escape the file path to prevent command injection
+    std::string escapedPath = Security::escapeShellArg(mp3FilePath);
+    std::string command = "python fasterWhisper.py " + escapedPath;
 
     std::array<char, 128> buffer;
     std::string result;

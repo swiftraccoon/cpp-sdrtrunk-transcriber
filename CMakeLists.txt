@@ -45,6 +45,7 @@ set(SOURCES
     src/transcriptionProcessor.cpp
     src/debugUtils.cpp
     src/fasterWhisper.cpp
+    src/security.cpp
 )
 
 # Create main executable
