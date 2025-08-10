@@ -163,11 +163,20 @@ public:
 // MOCK PYTHON EXECUTION
 // =============================================================================
 
+// Mock interface for testing Python execution - NOT for production use
+// These methods are mocked for unit testing and do not execute actual commands
 class MockPythonInterface {
 public:
     virtual ~MockPythonInterface() = default;
+    
+    // Mock system call - does not execute actual commands in tests
     virtual int system(const char* command) = 0;
-    virtual FILE* popen(const char* command, const char* type) = 0;
+    
+    // Mock popen - does not execute actual commands in tests
+    // NOSONAR: This is a test mock interface, not actual command execution
+    // CodeFactor-ignore: CWE-78 - This is a mock for testing only
+    virtual FILE* popen(const char* command, const char* type) = 0;  // NOLINT(cert-env33-c)
+    
     virtual int pclose(FILE* stream) = 0;
 };
 
@@ -175,7 +184,11 @@ public:
 class MockPython : public MockPythonInterface {
 public:
     MOCK_METHOD(int, system, (const char* command), (override));
-    MOCK_METHOD(FILE*, popen, (const char* command, const char* type), (override));
+    
+    // Mock implementation - does not execute actual commands
+    // NOSONAR: This is a test mock, not actual command execution
+    MOCK_METHOD(FILE*, popen, (const char* command, const char* type), (override));  // NOLINT(cert-env33-c)
+    
     MOCK_METHOD(int, pclose, (FILE* stream), (override));
 };
 #endif
