@@ -47,7 +47,7 @@ TEST_F(BoundaryValueTest, ExtremeDateTimeValues) {
         
         // Should handle all date/time boundaries gracefully
         if (year >= 2000 && year <= 2099) {  // Reasonable year range
-            EXPECT_FALSE(data.filename.empty()) << "Failed for: " << description;
+            EXPECT_FALSE(data.filename.get().empty()) << "Failed for: " << description;
             EXPECT_EQ(data.date.size(), 8) << "Date should be 8 chars for: " << description;
             EXPECT_EQ(data.time.size(), 6) << "Time should be 6 chars for: " << description;
         }
@@ -78,8 +78,8 @@ TEST_F(BoundaryValueTest, ExtremeIDValues) {
         extractFileInfo(data, filename, "Test transcription");
         
         if (talkgroupID >= 0 && radioID >= 0) {
-            EXPECT_EQ(data.talkgroupID, talkgroupID) << "Failed for: " << description;
-            EXPECT_EQ(data.radioID, radioID) << "Failed for: " << description;
+            EXPECT_EQ(data.talkgroupID.get(), talkgroupID) << "Failed for: " << description;
+            EXPECT_EQ(data.radioID.get(), radioID) << "Failed for: " << description;
         }
     }
 }
@@ -158,13 +158,13 @@ TEST_F(LargeDataTest, LargeTranscriptionHandling) {
     dbManager.createTable();
     
     FileData data = createTestFileData();
-    data.transcription = largeText;
-    data.v2transcription = "{\"12345\":\"" + largeText.substr(0, 1000) + "\"}";  // Truncated for JSON
-    
+    data.transcription = Transcription(largeText);
+    data.v2transcription = Transcription("{\"12345\":\"" + largeText.substr(0, 1000) + "\"}");  // Truncated for JSON
+
     EXPECT_NO_THROW(dbManager.insertRecording(
-        data.date, data.time, data.unixtime, data.talkgroupID,
-        data.talkgroupName, data.radioID, data.duration,
-        data.filename, data.filepath, data.transcription, data.v2transcription
+        data.date, data.time, data.unixtime(), data.talkgroupID.get(),
+        data.talkgroupName, data.radioID.get(), static_cast<double>(data.duration.get().count()),
+        data.filename.get().string(), data.filepath.get().string(), data.transcription.get(), data.v2transcription.get()
     ));
 }
 

@@ -17,9 +17,12 @@ DirectoryToMonitor: "/home/USER/SDRTrunk/recordings"
 # schema in DatabaseManager
 DATABASE_PATH: "/home/USER/SDRTrunk/recordings.db"
 
-# Talkgroup-specific glossary mappings
+# Talkgroup-specific glossary mappings and prompts
 # Want a tencode/callsign/signal/etc to have a translation appended to the end
-# of the transcription? Add it here! See howToFormatYourJSON.json for expected format.
+# of the transcription? Add it here!
+# See howToFormatYourJSON.json (flat format) and howToFormatYourJSON-multikey.json (multi-key format).
+# Keys with hyphens automatically also match the hyphen-stripped version (e.g. "10-4" matches "104").
+# PROMPT is optional — sent to OpenAI Whisper API for per-talkgroup context.
 TALKGROUP_FILES:
   52197-52201:
     GLOSSARY:
@@ -27,12 +30,18 @@ TALKGROUP_FILES:
         "/home/USER/SDRTrunk/tencode_glossary.json",
         "/home/USER/SDRTrunk/signals_glossary.json",
       ]
+    PROMPT: "Police radio dispatch, North Carolina State Highway Patrol."
   28513,41003,41004,41013,41020:
     GLOSSARY: ["/home/USER/SDRTrunk/tencode_glossary.json"]
 
 # Minimum duration in seconds for an MP3 file to be processed
 # used in fileProcessor.cpp
 MIN_DURATION_SECONDS: 9
+
+# Number of threads for parallel file processing
+# Used when running with -p / --parallel flag
+# Default: 1 (single-threaded)
+MAX_THREADS: 4
 
 # MAX_RETRIES: The maximum number of times the program will attempt to reprocess a file
 # before giving up if it encounters errors or invalid responses.

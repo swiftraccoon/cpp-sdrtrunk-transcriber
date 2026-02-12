@@ -19,13 +19,7 @@
       "name": "sqlite3"
     },
     {
-      "name": "yaml-cpp"
-    },
-    {
-      "name": "cli11"
-    },
-    {
-      "name": "nlohmann-json"
+      "name": "mpg123"
     }
   ],
   "features": {

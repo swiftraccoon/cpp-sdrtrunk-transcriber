@@ -12,24 +12,34 @@ ConfigSingleton &ConfigSingleton::getInstance()
     return instance;
 }
 
-void ConfigSingleton::initialize(const YAML::Node &config)
+void ConfigSingleton::initialize(const YamlNode &config)
 {
-    std::cout << "[" << getCurrentTime() << "] " << "ConfigSingleton.cpp Config YAML content:\n" << config << std::endl;
     // Parsing TALKGROUP_FILES with debug output
-    const YAML::Node &tgFilesNode = config["TALKGROUP_FILES"];
-    for (const auto &tg : tgFilesNode) {
-        std::string tgKey = tg.first.as<std::string>();
+    const YamlNode &tgFilesNode = config["TALKGROUP_FILES"];
+    auto tgKeys = tgFilesNode.getKeys();
+    for (const auto &tgKey : tgKeys) {
         std::cout << "[" << getCurrentTime() << "] " << "ConfigSingleton.cpp Processing Talkgroup: " << tgKey << std::endl; // Debugging output
 
         std::unordered_set<int> tgIDs = parseTalkgroupIDs(tgKey);
-        const YAML::Node &glossaryNode = tg.second["GLOSSARY"];
+        const YamlNode &tgNode = tgFilesNode[tgKey];
+        const YamlNode &glossaryNode = tgNode["GLOSSARY"];
+        
         std::vector<std::string> glossaryFiles;
-        for (const auto &file : glossaryNode) {
-            glossaryFiles.push_back(file.as<std::string>());
-            std::cout << "[" << getCurrentTime() << "] " << "ConfigSingleton.cpp Added Glossary File: " << file.as<std::string>() << std::endl; // Debugging output
+        // Handle GLOSSARY as a vector of strings
+        if (std::holds_alternative<std::vector<std::string>>(glossaryNode.getValue())) {
+            glossaryFiles = std::get<std::vector<std::string>>(glossaryNode.getValue());
+            for (const auto &file : glossaryFiles) {
+                std::cout << "[" << getCurrentTime() << "] " << "ConfigSingleton.cpp Added Glossary File: " << file << std::endl; // Debugging output
+            }
         }
 
-        TalkgroupFiles tgFiles{glossaryFiles};
+        TalkgroupFiles tgFiles{glossaryFiles, {}};
+        try {
+            if (tgNode.hasKey("PROMPT")) {
+                tgFiles.prompt = tgNode["PROMPT"].as<std::string>();
+                std::cout << "[" << getCurrentTime() << "] " << "ConfigSingleton.cpp Added Prompt for talkgroup: " << tgKey << std::endl;
+            }
+        } catch (...) {}
         for (int id : tgIDs) {
             talkgroupFiles[id] = tgFiles;
         }
@@ -43,11 +53,37 @@ void ConfigSingleton::initialize(const YAML::Node &config)
     errorWindowSeconds = config["ERROR_WINDOW_SECONDS"].as<int>();
     rateLimitWindowSeconds = config["RATE_LIMIT_WINDOW_SECONDS"].as<int>();
     minDurationSeconds = config["MIN_DURATION_SECONDS"].as<int>();
-    debugCurlHelper = config["DEBUG_CURL_HELPER"].as<bool>(false);
-    debugDatabaseManager = config["DEBUG_DATABASE_MANAGER"].as<bool>(false);
-    debugFileProcessor = config["DEBUG_FILE_PROCESSOR"].as<bool>(false);
-    debugMain = config["DEBUG_MAIN"].as<bool>(false);
-    debugTranscriptionProcessor = config["DEBUG_TRANSCRIPTION_PROCESSOR"].as<bool>(false);
+    try {
+        maxThreads = config["MAX_THREADS"].as<int>();
+    } catch (...) {
+        maxThreads = 1;
+    }
+    // Handle optional debug flags with defaults
+    try {
+        debugCurlHelper = config["DEBUG_CURL_HELPER"].as<bool>();
+    } catch (...) {
+        debugCurlHelper = false;
+    }
+    try {
+        debugDatabaseManager = config["DEBUG_DATABASE_MANAGER"].as<bool>();
+    } catch (...) {
+        debugDatabaseManager = false;
+    }
+    try {
+        debugFileProcessor = config["DEBUG_FILE_PROCESSOR"].as<bool>();
+    } catch (...) {
+        debugFileProcessor = false;
+    }
+    try {
+        debugMain = config["DEBUG_MAIN"].as<bool>();
+    } catch (...) {
+        debugMain = false;
+    }
+    try {
+        debugTranscriptionProcessor = config["DEBUG_TRANSCRIPTION_PROCESSOR"].as<bool>();
+    } catch (...) {
+        debugTranscriptionProcessor = false;
+    }
 }
 
 const std::unordered_map<int, TalkgroupFiles>& ConfigSingleton::getTalkgroupFiles() const {
@@ -58,6 +94,7 @@ std::string ConfigSingleton::getDirectoryToMonitor() const { return directoryToM
 std::string ConfigSingleton::getOpenAIAPIKey() const { return openaiAPIKey; }
 int ConfigSingleton::getLoopWaitSeconds() const { return loopWaitSeconds; }
 int ConfigSingleton::getMinDurationSeconds() const { return minDurationSeconds; }
+int ConfigSingleton::getMaxThreads() const { return maxThreads; }
 int ConfigSingleton::getMaxRetries() const { return maxRetries; }
 int ConfigSingleton::getMaxRequestsPerMinute() const { return maxRequestsPerMinute; }
 int ConfigSingleton::getErrorWindowSeconds() const { return errorWindowSeconds; }

@@ -37,7 +37,7 @@ protected:
 };
 
 TEST_F(SimplePerformanceTest, ConfigInitializationPerformance) {
-    YAML::Node config = loadTestConfig();
+    YamlNode config = loadTestConfig();
     auto& configSingleton = ConfigSingleton::getInstance();
     
     startTimer();
@@ -53,9 +53,9 @@ TEST_F(SimplePerformanceTest, DatabaseInsertPerformance) {
     
     startTimer();
     dbManager.insertRecording(
-        data.date, data.time, data.unixtime, data.talkgroupID,
-        data.talkgroupName, data.radioID, data.duration,
-        data.filename, data.filepath, data.transcription, data.v2transcription
+        data.date, data.time, data.unixtime(), data.talkgroupID.get(),
+        data.talkgroupName, data.radioID.get(), static_cast<double>(data.duration.get().count()),
+        data.filename.get().string(), data.filepath.get().string(), data.transcription.get(), data.v2transcription.get()
     );
     expectPerformanceUnder(50.0, "Single database insert");
 }
@@ -86,9 +86,9 @@ TEST_F(SimplePerformanceTest, BulkDatabaseInsertPerformance) {
     
     for (const auto& data : testData) {
         dbManager.insertRecording(
-            data.date, data.time, data.unixtime, data.talkgroupID,
-            data.talkgroupName, data.radioID, data.duration,
-            data.filename, data.filepath, data.transcription, data.v2transcription
+            data.date, data.time, data.unixtime(), data.talkgroupID.get(),
+            data.talkgroupName, data.radioID.get(), static_cast<double>(data.duration.get().count()),
+            data.filename.get().string(), data.filepath.get().string(), data.transcription.get(), data.v2transcription.get()
         );
     }
     

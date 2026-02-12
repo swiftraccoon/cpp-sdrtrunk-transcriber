@@ -6,11 +6,9 @@
     "10-5": "Relay (to)",
     "10-6": "Busy",
     "10-7": "Out-of-Service",
-    "101": "Signal Weak",
-    "102": "Signal Good",
-    "103": "Stop Transmitting",
-    "104": "Affirmative (OK)",
-    "105": "Relay (to)",
-    "106": "Busy",
-    "107": "Out-of-Service"
+    "10-20": "Location",
+    "officer": "police officer",
+    "ETA": "estimated time of arrival",
+    "BOL": "be on the lookout",
+    "MVA": "motor vehicle accident"
 }

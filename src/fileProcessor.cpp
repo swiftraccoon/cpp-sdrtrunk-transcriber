@@ -1,11 +1,13 @@
 // Standard Library Headers
 #include <algorithm>
+#include <ranges>
 #include <array>
 #include <chrono>
 #include <cstdio>
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <memory>
 #include <regex>
 #include <sstream>
@@ -30,6 +32,8 @@
 #include "../include/FileData.h"
 #include "../include/fileProcessor.h"
 #include "../include/globalFlags.h"
+#include "../include/MP3Duration.h"
+#include "../include/Result.h"
 #include "../include/transcriptionProcessor.h"
 #include "../include/fasterWhisper.h"
 
@@ -67,7 +71,7 @@ void find_and_move_mp3_without_txt(const std::string &directoryToMonitor)
     for (const auto &mp3 : mp3_files)
     {
         std::string mp3_base = mp3.substr(0, mp3.size() - 4); // Remove ".mp3" extension
-        if (std::find(txt_files.begin(), txt_files.end(), mp3_base) == txt_files.end())
+        if (std::ranges::find(txt_files, mp3_base) == txt_files.end())
         {
             std::filesystem::path src_path = std::filesystem::path(directoryToMonitor) / mp3;
             std::filesystem::path dest_path = std::filesystem::path(directoryToMonitor) / mp3;
@@ -76,7 +80,29 @@ void find_and_move_mp3_without_txt(const std::string &directoryToMonitor)
     }
 }
 
+// Using libmpg123 for accurate MP3 duration extraction
 std::string getMP3Duration(const std::string &mp3FilePath)
+{
+    // Use libmpg123 for sample-accurate duration with gapless support
+    auto result = sdrtrunk::getMP3Duration(mp3FilePath);
+
+    if (result.has_value()) {
+        // Return duration as string with 6 decimal places to match ffprobe format
+        char buffer[32];
+        snprintf(buffer, sizeof(buffer), "%.6f", result.value());
+        return std::string(buffer);
+    }
+
+    // Log error if debug enabled
+    if (ConfigSingleton::getInstance().isDebugFileProcessor()) {
+        std::cerr << "[" << getCurrentTime() << "] "
+                  << "MP3 duration error: " << result.error().toString() << std::endl;
+    }
+    return "";  // Return empty string on error to maintain compatibility
+}
+
+// Legacy version using ffprobe subprocess - kept for reference but deprecated
+std::string getMP3DurationLegacy(const std::string &mp3FilePath)
 {
 #ifdef _WIN32
     // Windows-specific implementation
@@ -164,7 +190,8 @@ std::string getMP3Duration(const std::string &mp3FilePath)
         CloseHandle(piProcInfo.hThread);
 
         // Trim the output string
-        outStr.erase(std::remove(outStr.begin(), outStr.end(), '\n'), outStr.end());
+        auto [first, last] = std::ranges::remove(outStr, '\n');
+        outStr.erase(first, outStr.end());
         return outStr;
     }
 #else
@@ -217,13 +244,15 @@ std::string getMP3Duration(const std::string &mp3FilePath)
             return "";
         }
 
-        result.erase(std::remove(result.begin(), result.end(), '\n'), result.end());
+        auto [first, last] = std::ranges::remove(result, '\n');
+        result.erase(first, result.end());
         return result;
     }
 #endif
+    return "";  // Should never reach here, but ensures all paths return
 }
 
-int generateUnixTimestamp(const std::string &date, const std::string &time)
+int64_t generateUnixTimestamp(const std::string &date, const std::string &time)
 {
     std::tm tm = {};
     std::string dateTime = date + time;
@@ -255,29 +284,30 @@ float validateDuration(const std::string &file_path, FileData &fileData)
             std::cout << "[" << getCurrentTime() << "] "
                       << "fileProcessor.cpp validateDuration: Empty duration string, setting to 0.0" << std::endl;
         }
-        fileData.duration = "0.000";
+        fileData.duration = Duration(std::chrono::seconds(0));
         return 0.0f;
     }
-    
+
     float duration = 0.0f;
     try {
         duration = std::stof(durationStr);
-        fileData.duration = durationStr; // Set the duration in FileData
+        fileData.duration = Duration(std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::duration<float>(duration)));
     } catch (const std::invalid_argument& e) {
         if (ConfigSingleton::getInstance().isDebugFileProcessor()) {
             std::cout << "[" << getCurrentTime() << "] "
-                      << "fileProcessor.cpp validateDuration: Invalid duration format '" << durationStr 
+                      << "fileProcessor.cpp validateDuration: Invalid duration format '" << durationStr
                       << "', setting to 0.0" << std::endl;
         }
-        fileData.duration = "0.000";
+        fileData.duration = Duration(std::chrono::seconds(0));
         return 0.0f;
     } catch (const std::out_of_range& e) {
         if (ConfigSingleton::getInstance().isDebugFileProcessor()) {
             std::cout << "[" << getCurrentTime() << "] "
-                      << "fileProcessor.cpp validateDuration: Duration out of range '" << durationStr 
+                      << "fileProcessor.cpp validateDuration: Duration out of range '" << durationStr
                       << "', setting to 0.0" << std::endl;
         }
-        fileData.duration = "0.000";
+        fileData.duration = Duration(std::chrono::seconds(0));
         return 0.0f;
     }
 
@@ -297,16 +327,64 @@ float validateDuration(const std::string &file_path, FileData &fileData)
     return duration;
 }
 
-// Transcribes the audio file
-std::string transcribeAudio(const std::string &file_path, const std::string &OPENAI_API_KEY)
+// Extract talkgroup ID from filename without full extractFileInfo processing
+// Handles all SDRTrunk __TO_ formats:
+//   Standard:     __TO_52324_FROM_...                        -> 52324
+//   With version: __TO_41001_V2_FROM_...                     -> 41001
+//   NBFM:         __TO_9969                                  -> 9969
+//   P-group alone:      __TO_P52197                          -> 52197
+//   P-group bracket:    __TO_P52197-[52198]_FROM_...         -> 52198
+//   P-group bracket _:  __TO_P52197_[52198]_FROM_...         -> 52198
+//   P-group multi:      __TO_P52197-[52198--51426--56881]... -> 52198
+//   P-group multi _:    __TO_P52197_[52198__52199]...        -> 52198
+int extractTalkgroupIdFromFilename(const std::string &filename)
 {
-    return curl_transcribe_audio(file_path, OPENAI_API_KEY);
+    std::smatch match;
+
+    if (filename.find("TO_P") != std::string::npos)
+    {
+        // P-group with brackets: extract first number inside [ ]
+        // Matches [52198] and [52198--51426] and [52198__52199] alike
+        std::regex rgx_bracket("\\[(\\d+)");
+        if (std::regex_search(filename, match, rgx_bracket) && match.size() > 1)
+        {
+            return std::stoi(match[1].str());
+        }
+
+        // P-group without brackets: TO_P52197 or legacy TO_P_52198
+        std::regex rgx_talkgroup_P("TO_P_?(\\d+)");
+        if (std::regex_search(filename, match, rgx_talkgroup_P) && match.size() > 1)
+        {
+            return std::stoi(match[1].str());
+        }
+    }
+
+    // Standard: TO_digits (also handles _V2 suffix since \d+ stops at _)
+    std::regex rgx_talkgroup("TO_(\\d+)");
+    if (std::regex_search(filename, match, rgx_talkgroup) && match.size() > 1)
+    {
+        return std::stoi(match[1].str());
+    }
+
+    return 0;
+}
+
+// Transcribes the audio file
+std::string transcribeAudio(const std::string &file_path, const std::string &OPENAI_API_KEY, const std::string &prompt = "")
+{
+    return curl_transcribe_audio(file_path, OPENAI_API_KEY, prompt);
 }
 
 // Transcribe the audio file locally with whisper.cpp
 std::string transcribeAudioLocal(const std::string &file_path)
 {
-    return local_transcribe_audio(file_path);
+    auto result = local_transcribe_audio(file_path);
+    if (result.has_value()) {
+        return result.value();
+    } else {
+        std::cerr << "[ERROR] Failed to transcribe " << file_path << ": " << result.error() << std::endl;
+        return "";  // Return empty string on error
+    }
 }
 
 // Extracts information from the filename and transcription
@@ -316,20 +394,44 @@ void extractFileInfo(FileData &fileData, const std::string &filename, const std:
     std::string talkgroupID, radioID;
     int defaultID = 1234567; // Default integer value for NBFM usage
 
-    // Regular expressions for talkgroupID with and without 'P_' prefix
-    std::regex rgx_talkgroup_P("TO_P_(\\d+)");
-    std::regex rgx_talkgroup("TO_(\\d+)");
     // Regular expression for radioID
     std::regex rgx_radio("_FROM_(\\d+)");
 
-    // Determine which regex to use based on whether the filename contains 'P_'
-    if (std::regex_search(filename, match, filename.find("TO_P_") != std::string::npos ? rgx_talkgroup_P : rgx_talkgroup) && match.size() > 1)
+    // Extract talkgroup ID — handle all SDRTrunk P-group variants
+    bool tgFound = false;
+    if (filename.find("TO_P") != std::string::npos)
     {
-        talkgroupID = match[1].str();
+        // P-group with brackets: first number inside [ ] is the primary talkgroup
+        // Handles [52198], [52198--51426--56881], [52198__52199]
+        std::regex rgx_bracket("\\[(\\d+)");
+        if (std::regex_search(filename, match, rgx_bracket) && match.size() > 1)
+        {
+            talkgroupID = match[1].str();
+            tgFound = true;
+        }
+        else
+        {
+            // P-group without brackets: TO_P52197 or legacy TO_P_52198
+            std::regex rgx_talkgroup_P("TO_P_?(\\d+)");
+            if (std::regex_search(filename, match, rgx_talkgroup_P) && match.size() > 1)
+            {
+                talkgroupID = match[1].str();
+                tgFound = true;
+            }
+        }
     }
-    else
+    if (!tgFound)
     {
-        talkgroupID = std::to_string(defaultID); // Set to default value
+        // Standard: TO_digits (handles _V2 suffix since \d+ stops at _)
+        std::regex rgx_talkgroup("TO_(\\d+)");
+        if (std::regex_search(filename, match, rgx_talkgroup) && match.size() > 1)
+        {
+            talkgroupID = match[1].str();
+        }
+        else
+        {
+            talkgroupID = std::to_string(defaultID);
+        }
     }
 
     // Use a single regex search for radioID
@@ -344,40 +446,63 @@ void extractFileInfo(FileData &fileData, const std::string &filename, const std:
     // Extract variables from filename
     std::string date = filename.substr(0, 8);
     std::string time = filename.substr(9, 6);
+
+    // Extract talkgroup name: text between timestamp (pos 15) and "__TO_"
+    // New SDRTrunk format has underscore separator: 20260208_121343_Name
+    // Old format runs name directly after time:      20250715_112349Name
+    std::string talkgroupName;
+    auto toPos = filename.find("__TO_");
+    if (toPos != std::string::npos && toPos > 15) {
+        size_t nameStart = 15;
+        // Skip leading underscore separator if present
+        if (nameStart < filename.size() && filename[nameStart] == '_') {
+            nameStart++;
+        }
+        if (nameStart < toPos) {
+            talkgroupName = filename.substr(nameStart, toPos - nameStart);
+        }
+    }
+
     std::cout << "[" << getCurrentTime() << "] "
               << "fileProcessor.cpp extractFileInfo RID: " << radioID << std::endl;
     std::cout << "[" << getCurrentTime() << "] "
               << "fileProcessor.cpp extractFileInfo TGID: " << talkgroupID << std::endl;
-    fileData.radioID = std::stoi(radioID);
-    fileData.talkgroupID = std::stoi(talkgroupID);
+    fileData.radioID = RadioId(std::stoi(radioID));
+    fileData.talkgroupID = TalkgroupId(std::stoi(talkgroupID));
+    fileData.talkgroupName = talkgroupName;
     fileData.date = date;
     fileData.time = time;
-    fileData.unixtime = generateUnixTimestamp(fileData.date, fileData.time);
-    fileData.filename = filename;
-    fileData.transcription = transcription;
+    // Parse timestamp properly
+    std::tm tm = {};
+    std::istringstream ss(date + time);
+    ss >> std::get_time(&tm, "%Y%m%d%H%M%S");
+    fileData.timestamp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+    fileData.filename = FilePath(std::filesystem::path(filename));
+    fileData.transcription = Transcription(transcription);
 
     // Retrieve the talkgroupFiles map from ConfigSingleton
     const auto &talkgroupFiles = ConfigSingleton::getInstance().getTalkgroupFiles();
-    fileData.v2transcription = generateV2Transcription(
+    fileData.v2transcription = Transcription(generateV2Transcription(
         transcription,
-        fileData.talkgroupID,
-        fileData.radioID,
-        talkgroupFiles);
+        fileData.talkgroupID.get(),
+        fileData.radioID.get(),
+        talkgroupFiles));
 }
 
-// Saves the transcription to a TXT file
+// Saves the transcription to a TXT file alongside the MP3
 void saveTranscription(const FileData &fileData)
 {
-    std::string txt_filename = fileData.filename.substr(0, fileData.filename.size() - 4) + ".txt";
-    std::ofstream txt_file(txt_filename);
-    txt_file << fileData.v2transcription;
+    std::filesystem::path txt_path = fileData.filepath.get();
+    txt_path.replace_extension(".txt");
+    std::ofstream txt_file(txt_path);
+    txt_file << fileData.v2transcription.get();
     txt_file.close();
 }
 
 // Moves the MP3 and TXT files to the appropriate subdirectory
 void moveFiles(const FileData &fileData, const std::string &directoryToMonitor)
 {
-    std::filesystem::path subDir = std::filesystem::path(directoryToMonitor) / std::to_string(fileData.talkgroupID);
+    std::filesystem::path subDir = std::filesystem::path(directoryToMonitor) / std::to_string(fileData.talkgroupID.get());
     if (!std::filesystem::exists(subDir))
     {
         std::filesystem::create_directory(subDir);
@@ -385,24 +510,25 @@ void moveFiles(const FileData &fileData, const std::string &directoryToMonitor)
     if (ConfigSingleton::getInstance().isDebugFileProcessor())
     {
         std::cout << "[" << getCurrentTime() << "] "
-                  << "fileProcessor.cpp moveFiles Moving file from: " << fileData.filepath << " to: " << (subDir / fileData.filename) << std::endl;
+                  << "fileProcessor.cpp moveFiles Moving file from: " << fileData.filepath.get() << " to: " << (subDir / fileData.filename.get()) << std::endl;
     }
 
-    if (std::filesystem::exists(fileData.filepath))
+    if (std::filesystem::exists(fileData.filepath.get()))
     {
-        std::filesystem::rename(fileData.filepath, subDir / fileData.filename);
+        std::filesystem::rename(fileData.filepath.get(), subDir / fileData.filename.get());
     }
 
-    std::string txt_filename = fileData.filename.substr(0, fileData.filename.size() - 4) + ".txt";
+    std::filesystem::path txt_path = fileData.filepath.get();
+    txt_path.replace_extension(".txt");
     if (ConfigSingleton::getInstance().isDebugFileProcessor())
     {
         std::cout << "[" << getCurrentTime() << "] "
-                  << "fileProcessor.cpp moveFiles Moving txt from: " << txt_filename << " to: " << (subDir / txt_filename) << std::endl;
+                  << "fileProcessor.cpp moveFiles Moving txt from: " << txt_path << " to: " << (subDir / txt_path.filename()) << std::endl;
     }
 
-    if (std::filesystem::exists(txt_filename))
+    if (std::filesystem::exists(txt_path))
     {
-        std::filesystem::rename(txt_filename, subDir / txt_filename);
+        std::filesystem::rename(txt_path, subDir / txt_path.filename());
     }
 }
 
@@ -445,7 +571,18 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
             }
             return FileData(); // Skip further processing
         }
-        fileData.filepath = file_path;
+        fileData.filepath = FilePath(std::filesystem::path(file_path));
+
+        // Look up per-talkgroup prompt before transcription
+        std::string prompt;
+        int tgId = extractTalkgroupIdFromFilename(path.filename().string());
+        if (tgId > 0) {
+            auto it = ConfigSingleton::getInstance().getTalkgroupFiles().find(tgId);
+            if (it != ConfigSingleton::getInstance().getTalkgroupFiles().end()) {
+                prompt = it->second.prompt;
+            }
+        }
+
         std::string transcription;
         if (gLocalFlag)
         {
@@ -457,7 +594,7 @@ FileData processFile(const std::filesystem::path &path, const std::string &direc
         {
             std::cout << "[" << getCurrentTime() << "] "
                       << "fileProcessor.cpp processFile gLocalFlag " << gLocalFlag << std::endl;
-            transcription = transcribeAudio(file_path, OPENAI_API_KEY);
+            transcription = transcribeAudio(file_path, OPENAI_API_KEY, prompt);
         }
         extractFileInfo(fileData, path.filename().string(), transcription);
 

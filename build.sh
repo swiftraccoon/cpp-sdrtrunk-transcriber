@@ -74,15 +74,15 @@ if [[ "$INSTALL_DEPS" == "true" ]]; then
     print_status "Installing system dependencies..."
     
     if command -v dnf &> /dev/null; then
-        sudo dnf install -y cmake gcc-c++ libcurl-devel sqlite-devel yaml-cpp-devel cli11-devel nlohmann-json-devel gtest-devel
+        sudo dnf install -y cmake gcc-c++ libcurl-devel sqlite-devel gtest-devel
     elif command -v apt &> /dev/null; then
         sudo apt update
-        sudo apt install -y build-essential cmake libcurl4-openssl-dev libsqlite3-dev libyaml-cpp-dev libcli11-dev nlohmann-json3-dev libgtest-dev
+        sudo apt install -y build-essential cmake libcurl4-openssl-dev libsqlite3-dev libgtest-dev
     elif command -v pacman &> /dev/null; then
-        sudo pacman -S --needed cmake gcc curl sqlite yaml-cpp cli11 nlohmann-json gtest
+        sudo pacman -S --needed cmake gcc curl sqlite gtest
     else
         print_warning "Package manager not detected. Please install dependencies manually."
-        print_warning "Required: cmake, gcc-c++, libcurl-dev, sqlite-dev, yaml-cpp-dev, cli11-dev, nlohmann-json-dev, gtest-dev"
+        print_warning "Required: cmake, gcc-c++, libcurl-dev, sqlite-dev, gtest-dev"
     fi
 fi
 

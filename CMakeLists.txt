@@ -1,5 +1,5 @@
 # Modern CMake build system for SDRTrunk Transcriber
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.25)  # Required for C++23 support
 
 # Project declaration with version and description
 project(sdrTrunkTranscriber
@@ -8,8 +8,8 @@ project(sdrTrunkTranscriber
     LANGUAGES CXX
 )
 
-# Set C++ standard to C++17 and make it required
-set(CMAKE_CXX_STANDARD 17)
+# Set C++ standard to C++23 and make it required
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -46,6 +46,10 @@ set(SOURCES
     src/debugUtils.cpp
     src/fasterWhisper.cpp
     src/security.cpp
+    src/commandLineParser.cpp
+    src/jsonParser.cpp
+    src/yamlParser.cpp
+    src/MP3Duration.cpp
 )
 
 # Create main executable
@@ -67,19 +71,39 @@ target_include_directories(sdrTrunkTranscriber PRIVATE
 target_link_libraries(sdrTrunkTranscriber PRIVATE
     CURL::libcurl
     SQLite::SQLite3
-    yaml-cpp
-    CLI11::CLI11
-    nlohmann_json::nlohmann_json
+    ${MPG123_LIBRARIES}
 )
 
+# Include mpg123 headers
+target_include_directories(sdrTrunkTranscriber PRIVATE
+    ${MPG123_INCLUDE_DIRS}
+)
+
+# Add mpg123 compile flags if available
+if(MPG123_CFLAGS_OTHER)
+    target_compile_options(sdrTrunkTranscriber PRIVATE ${MPG123_CFLAGS_OTHER})
+endif()
+
+# Link Python/pybind11 if local transcription is enabled
+if(USE_LOCAL_TRANSCRIPTION)
+    target_link_libraries(sdrTrunkTranscriber PRIVATE
+        pybind11::embed
+        Python3::Python
+    )
+    target_compile_definitions(sdrTrunkTranscriber PRIVATE
+        USE_PYBIND11
+    )
+endif()
+
 # Compiler-specific options
-target_compile_features(sdrTrunkTranscriber PRIVATE cxx_std_17)
+target_compile_features(sdrTrunkTranscriber PRIVATE cxx_std_23)
 
 # Add compile definitions for build type
 target_compile_definitions(sdrTrunkTranscriber PRIVATE
     $<$<CONFIG:Debug>:DEBUG>
     $<$<CONFIG:Release>:NDEBUG>
 )
+
 
 # Testing configuration
 if(BUILD_TESTS)

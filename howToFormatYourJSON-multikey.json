@@ -1,0 +1,16 @@
+{
+    "GLOSSARY": [
+        {"keys": ["10-1"], "value": "Signal Weak"},
+        {"keys": ["10-2"], "value": "Signal Good"},
+        {"keys": ["10-3"], "value": "Stop Transmitting"},
+        {"keys": ["10-4", "104"], "value": "Affirmative (OK)"},
+        {"keys": ["10-5"], "value": "Relay (to)"},
+        {"keys": ["10-6"], "value": "Busy"},
+        {"keys": ["10-7", "107"], "value": "Out-of-Service"},
+        {"keys": ["10-20", "1020"], "value": "Location"},
+        {"keys": ["officer", "ofc"], "value": "police officer"},
+        {"keys": ["ETA"], "value": "estimated time of arrival"},
+        {"keys": ["BOL"], "value": "be on the lookout"},
+        {"keys": ["MVA"], "value": "motor vehicle accident"}
+    ]
+}

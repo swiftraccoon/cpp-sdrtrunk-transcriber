@@ -60,6 +60,10 @@ set(TEST_SOURCES
     ../src/debugUtils.cpp
     ../src/fasterWhisper.cpp
     ../src/security.cpp
+    ../src/commandLineParser.cpp
+    ../src/jsonParser.cpp
+    ../src/yamlParser.cpp
+    ../src/MP3Duration.cpp
 )
 
 # Test source files
@@ -88,7 +92,7 @@ endif()
 # Set target properties
 set_target_properties(runTests PROPERTIES
     OUTPUT_NAME "sdrtrunk-transcriber-tests"
-    CXX_STANDARD 17
+    CXX_STANDARD 23
     CXX_STANDARD_REQUIRED ON
 )
 
@@ -96,6 +100,7 @@ set_target_properties(runTests PROPERTIES
 target_include_directories(runTests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../include
     ${CMAKE_CURRENT_SOURCE_DIR}  # For test headers
+    ${MPG123_INCLUDE_DIRS}
 )
 
 # Link libraries for main test executable
@@ -104,10 +109,8 @@ target_link_libraries(runTests PRIVATE
     GTest::Main
     CURL::libcurl
     SQLite::SQLite3
-    yaml-cpp
-    CLI11::CLI11
-    nlohmann_json::nlohmann_json
     Threads::Threads
+    ${MPG123_LIBRARIES}
 )
 
 # Link libraries for performance tests (if available)
@@ -119,16 +122,14 @@ if(BENCHMARK_AVAILABLE)
         benchmark::benchmark
         CURL::libcurl
         SQLite::SQLite3
-        yaml-cpp
-        CLI11::CLI11
-        nlohmann_json::nlohmann_json
         Threads::Threads
+        ${MPG123_LIBRARIES}
     )
     
     # Set properties for performance test executable
     set_target_properties(perfTests PROPERTIES
         OUTPUT_NAME "sdrtrunk-transcriber-perf-tests"
-        CXX_STANDARD 17
+        CXX_STANDARD 23
         CXX_STANDARD_REQUIRED ON
     )
     
@@ -139,7 +140,7 @@ if(BENCHMARK_AVAILABLE)
 endif()
 
 # Compiler-specific options for tests
-target_compile_features(runTests PRIVATE cxx_std_17)
+target_compile_features(runTests PRIVATE cxx_std_23)
 
 # Add compile definitions
 target_compile_definitions(runTests PRIVATE
@@ -278,6 +279,12 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/test_data/sample_glossary.json
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/test_data/sample_config.yaml
      "OPENAI_API_KEY: test-key\nDATABASE_PATH: :memory:\nDirectoryToMonitor: /tmp\n")
+
+# Copy real MP3 test file if it exists in source tree
+set(REAL_MP3_FILE "${CMAKE_CURRENT_SOURCE_DIR}/test_data/20250715_112349North_Carolina_VIPER_Rutherford_T-SPDControl__TO_52324_FROM_2097268.mp3")
+if(EXISTS ${REAL_MP3_FILE})
+    file(COPY ${REAL_MP3_FILE} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/test_data/)
+endif()
 
 # Print test configuration
 message(STATUS "=== Test Configuration ===")

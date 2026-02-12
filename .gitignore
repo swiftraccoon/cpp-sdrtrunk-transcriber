@@ -33,8 +33,6 @@
 
 .vscode/
 build/
-yaml-cpp/
-CLI11/
 41003/
 20230927_181109North_Carolina_VIPER_Rutherford_T-Control__TO_41003_FROM_1610051.mp3
 52199/
@@ -51,3 +49,11 @@ scripts/__pycache__/ollama.cpython-311.pyc
 scripts/ollama.py
 .claude
 build-bundled/
+changelog.md
+test-*.sh
+test-*.json
+test-*.yaml
+ffmpeg_source/
+sdrtrunk/
+__pycache__/
+test/test_data/

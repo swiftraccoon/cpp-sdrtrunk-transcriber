@@ -68,14 +68,11 @@ jobs:
           build-essential \
           cmake \
           ninja-build \
-          ffmpeg \
-          libavcodec-dev \
-          libavutil-dev \
-          libavformat-dev \
           libcurl4-openssl-dev \
           libsqlite3-dev \
-          pkg-config \
-          libyaml-cpp-dev
+          libmpg123-dev \
+          python3-dev \
+          pkg-config
 
     - name: Setup MSVC (Windows)
       if: runner.os == 'Windows'
@@ -97,15 +94,6 @@ jobs:
         .\vcpkg\vcpkg install
       shell: pwsh
 
-    - name: Setup external dependencies
-      run: |
-        if [ ! -d "external/yaml-cpp/.git" ]; then
-          git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
-        fi
-        if [ ! -d "external/CLI11/.git" ]; then
-          git clone https://github.com/CLIUtils/CLI11.git external/CLI11
-        fi
-      shell: bash
 
     - name: Configure CMake (Ubuntu)
       if: runner.os == 'Linux'

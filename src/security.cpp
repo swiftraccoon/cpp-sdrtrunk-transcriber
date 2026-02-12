@@ -1,5 +1,6 @@
 #include "security.h"
 #include <algorithm>
+#include <ranges>
 #include <regex>
 #include <filesystem>
 
@@ -83,11 +84,13 @@ namespace Security {
         std::string extension = path.extension().string();
         
         // Convert to lowercase for case-insensitive comparison
-        std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+        std::ranges::transform(extension, extension.begin(), 
+                               [](unsigned char c) { return std::tolower(c); });
         
         for (const auto& allowed : allowedExtensions) {
             std::string allowedLower = allowed;
-            std::transform(allowedLower.begin(), allowedLower.end(), allowedLower.begin(), ::tolower);
+            std::ranges::transform(allowedLower, allowedLower.begin(),
+                                  [](unsigned char c) { return std::tolower(c); });
             
             // Add dot if not present in allowed extension
             if (!allowedLower.empty() && allowedLower[0] != '.') {

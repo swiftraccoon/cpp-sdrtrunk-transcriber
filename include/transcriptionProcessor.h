@@ -6,13 +6,12 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
-
-// Third-Party Library Headers
-#include <yaml-cpp/yaml.h>
+#include <vector>
 
 struct TalkgroupFiles
 {
     std::vector<std::string> glossaryFiles;
+    std::string prompt;
 };
 
 // Function to read a mapping file and return an unordered_map

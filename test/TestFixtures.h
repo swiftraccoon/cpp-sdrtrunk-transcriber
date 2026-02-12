@@ -12,11 +12,11 @@
 #include <cstdlib>
 
 // Third-Party Library Headers
-#include <yaml-cpp/yaml.h>
 #include <gtest/gtest.h>
 
 // Project-Specific Headers
 #include "FileData.h"
+#include "yamlParser.h"
 #include "TestMocks.h"
 
 // Cross-platform temporary directory helper
@@ -67,8 +67,8 @@ public:
     }
     
     // Generate test configuration YAML
-    static YAML::Node generateTestConfig() {
-        YAML::Node config;
+    static YamlNode generateTestConfig() {
+        YamlNode config;
         config["OPENAI_API_KEY"] = "test-api-key-12345";
         config["DATABASE_PATH"] = ":memory:";
         config["DirectoryToMonitor"] = getTempDir() + "test_monitor";
@@ -87,19 +87,19 @@ public:
         config["DEBUG_TRANSCRIPTION_PROCESSOR"] = false;
         
         // Talkgroup files configuration
-        YAML::Node talkgroupFiles;
+        YamlNode talkgroupFiles;
         
         // NCSHP configuration
-        YAML::Node ncshpConfig;
-        YAML::Node ncshpGlossary;
+        YamlNode ncshpConfig;
+        YamlNode ncshpGlossary;
         ncshpGlossary.push_back(getTempDir() + "ncshp_glossary.json");
         ncshpGlossary.push_back(getTempDir() + "law_enforcement.json");
         ncshpConfig["GLOSSARY"] = ncshpGlossary;
         talkgroupFiles["52198-52250"] = ncshpConfig;
         
         // Default configuration - use specific range instead of wildcard
-        YAML::Node defaultConfig;
-        YAML::Node defaultGlossary;
+        YamlNode defaultConfig;
+        YamlNode defaultGlossary;
         defaultGlossary.push_back(getTempDir() + "default_glossary.json");
         defaultConfig["GLOSSARY"] = defaultGlossary;
         talkgroupFiles["99999"] = defaultConfig;  // Single default talkgroup instead of wildcard
@@ -166,15 +166,20 @@ public:
         FileData data;
         data.date = "2024-01-15";
         data.time = "14:30:45";
-        data.unixtime = 1705330245;
-        data.talkgroupID = talkgroupID;
+        // Set timestamp
+        std::tm tm = {};
+        std::istringstream ss(data.date + data.time);
+        ss >> std::get_time(&tm, "%Y-%m-%d%H:%M:%S");
+        data.timestamp = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+        data.talkgroupID = TalkgroupId(talkgroupID);
         data.talkgroupName = (talkgroupID >= 52198 && talkgroupID <= 52250) ? "NCSHP" : "Unknown";
-        data.radioID = radioID;
-        data.duration = "00:05.123";
-        data.filename = generateP25Filename(2024, 1, 15, 14, 30, 45, talkgroupID, radioID);
-        data.filepath = getTempDir() + "test_audio/" + data.filename;
-        data.transcription = transcription;
-        data.v2transcription = "{\"" + std::to_string(radioID) + "\":\"" + transcription + "\"}";
+        data.radioID = RadioId(radioID);
+        data.duration = Duration(std::chrono::seconds(5));
+        auto fname = generateP25Filename(2024, 1, 15, 14, 30, 45, talkgroupID, radioID);
+        data.filename = FilePath(std::filesystem::path(fname));
+        data.filepath = FilePath(std::filesystem::path(getTempDir()) / "test_audio" / fname);
+        data.transcription = Transcription(transcription);
+        data.v2transcription = Transcription("{\"" + std::to_string(radioID) + "\":\"" + transcription + "\"}");
         return data;
     }
     
@@ -186,7 +191,7 @@ public:
         
         if (!dataLoaded) {
             // Use the real MP3 file provided in test directory
-            std::string realMp3Path = "/home/foxtrot/git/cpp-sdrtrunk-transcriber/test/20250715_112349North_Carolina_VIPER_Rutherford_T-SPDControl__TO_52324_FROM_2097268.mp3";
+            std::string realMp3Path = "/home/foxtrot/git/cpp-sdrtrunk-transcriber/test/test_data/20250715_112349North_Carolina_VIPER_Rutherford_T-SPDControl__TO_52324_FROM_2097268.mp3";
             
             std::ifstream file(realMp3Path, std::ios::binary | std::ios::ate);
             if (file.is_open()) {
@@ -297,7 +302,7 @@ protected:
         testDirectory = fileManager->createTempDirectory("sdrtrunk_test");
         
         // Create test configuration
-        YAML::Node config = TestDataGenerator::generateTestConfig();
+        YamlNode config = TestDataGenerator::generateTestConfig();
         std::stringstream configStream;
         configStream << config;
         testConfigPath = fileManager->createTempFile("test_config.yaml", configStream.str());
@@ -326,8 +331,8 @@ protected:
     }
     
     // Helper methods for common test operations
-    YAML::Node loadTestConfig() {
-        return YAML::LoadFile(testConfigPath);
+    YamlNode loadTestConfig() {
+        return YamlParser::loadFile(testConfigPath);
     }
     
     std::string createTestAudioFile(int talkgroupID, int radioID) {

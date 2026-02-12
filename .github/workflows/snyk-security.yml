@@ -53,12 +53,9 @@ jobs:
             cmake \
             libcurl4-openssl-dev \
             libsqlite3-dev \
-            libyaml-cpp-dev \
-            pkg-config \
-            ffmpeg \
-            libavcodec-dev \
-            libavutil-dev \
-            libavformat-dev
+            libmpg123-dev \
+            python3-dev \
+            pkg-config
 
       # Run various Snyk tests
       # All tests use continue-on-error to prevent workflow failure

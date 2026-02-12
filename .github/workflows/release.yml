@@ -11,64 +11,14 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+
 env:
   BUILD_TYPE: Release
 
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      release_id: ${{ steps.create_release.outputs.id }}
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Get tag name
-      id: get_tag
-      run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
-        else
-          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Generate changelog
-      id: changelog
-      run: |
-        # Get previous tag
-        PREV_TAG=$(git describe --tags --abbrev=0 ${{ steps.get_tag.outputs.tag }}^ 2>/dev/null || echo "")
-        
-        echo "## Changes in ${{ steps.get_tag.outputs.tag }}" > changelog.md
-        echo "" >> changelog.md
-        
-        if [ -n "$PREV_TAG" ]; then
-          echo "### Commits since $PREV_TAG" >> changelog.md
-          git log --pretty=format:"- %s (%h)" $PREV_TAG..${{ steps.get_tag.outputs.tag }} >> changelog.md
-        else
-          echo "### Initial Release" >> changelog.md
-          echo "- First release of cpp-sdrtrunk-transcriber" >> changelog.md
-        fi
-        
-        # Save changelog to file for later use
-        echo "changelog_file=changelog.md" >> $GITHUB_OUTPUT
-
-    - name: Create Release
-      id: create_release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ steps.get_tag.outputs.tag }}
-        name: Release ${{ steps.get_tag.outputs.tag }}
-        body_path: ${{ steps.changelog.outputs.changelog_file }}
-        draft: true
-        prerelease: false
-        token: ${{ secrets.GITHUB_TOKEN }}
-
   build-release:
-    needs: create-release
     strategy:
       matrix:
         include:
@@ -78,14 +28,12 @@ jobs:
           - os: windows-latest
             name: windows-x64
             artifact_ext: zip
-          
+
     runs-on: ${{ matrix.os }}
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        submodules: recursive
 
     - name: Install dependencies (Linux)
       if: runner.os == 'Linux'
@@ -94,14 +42,11 @@ jobs:
         sudo apt-get install -y \
           build-essential \
           cmake \
-          ffmpeg \
-          libavcodec-dev \
-          libavutil-dev \
-          libavformat-dev \
           libcurl4-openssl-dev \
           libsqlite3-dev \
-          pkg-config \
-          libyaml-cpp-dev
+          libmpg123-dev \
+          python3-dev \
+          pkg-config
 
     - name: Setup MSVC (Windows)
       if: runner.os == 'Windows'
@@ -122,16 +67,6 @@ jobs:
       run: |
         .\vcpkg\vcpkg install
       shell: pwsh
-
-    - name: Setup external dependencies
-      run: |
-        if [ ! -d "external/yaml-cpp/.git" ]; then
-          git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
-        fi
-        if [ ! -d "external/CLI11/.git" ]; then
-          git clone https://github.com/CLIUtils/CLI11.git external/CLI11
-        fi
-      shell: bash
 
     - name: Configure CMake (Linux)
       if: runner.os == 'Linux'
@@ -159,7 +94,7 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         mkdir -p release
-        cp build/sdrtrunk-transcriber* release/ 2>/dev/null || true
+        cp build/sdrtrunk-transcriber release/ 2>/dev/null || true
         cp README.md LICENSE sample-config.yaml release/
         cp -r scripts release/
         tar -czf sdrtrunk-transcriber-${{ matrix.name }}.tar.gz -C release .
@@ -175,29 +110,59 @@ jobs:
         Compress-Archive -Path release/* -DestinationPath sdrtrunk-transcriber-${{ matrix.name }}.zip
       shell: pwsh
 
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./sdrtrunk-transcriber-${{ matrix.name }}.${{ matrix.artifact_ext }}
-        asset_name: sdrtrunk-transcriber-${{ matrix.name }}.${{ matrix.artifact_ext }}
-        asset_content_type: application/octet-stream
+        name: sdrtrunk-transcriber-${{ matrix.name }}
+        path: sdrtrunk-transcriber-${{ matrix.name }}.${{ matrix.artifact_ext }}
+        retention-days: 1
 
   publish-release:
-    needs: [create-release, build-release]
+    needs: build-release
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Publish Release
-      uses: actions/github-script@v7
+    - name: Checkout code
+      uses: actions/checkout@v4
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          await github.rest.repos.updateRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            release_id: '${{ needs.create-release.outputs.release_id }}',
-            draft: false
-          })
+        fetch-depth: 0
+
+    - name: Get tag name
+      id: get_tag
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+        else
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Generate changelog
+      run: |
+        # Get previous tag
+        PREV_TAG=$(git describe --tags --abbrev=0 ${{ steps.get_tag.outputs.tag }}^ 2>/dev/null || echo "")
+
+        echo "## Changes in ${{ steps.get_tag.outputs.tag }}" > changelog.md
+        echo "" >> changelog.md
+
+        if [ -n "$PREV_TAG" ]; then
+          echo "### Commits since $PREV_TAG" >> changelog.md
+          git log --pretty=format:"- %s (%h)" $PREV_TAG..${{ steps.get_tag.outputs.tag }} >> changelog.md
+        else
+          echo "### Initial Release" >> changelog.md
+          echo "- First release of cpp-sdrtrunk-transcriber" >> changelog.md
+        fi
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        merge-multiple: true
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.get_tag.outputs.tag }}
+        name: Release ${{ steps.get_tag.outputs.tag }}
+        body_path: changelog.md
+        files: artifacts/*
+        token: ${{ secrets.GITHUB_TOKEN }}

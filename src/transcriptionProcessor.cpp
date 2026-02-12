@@ -11,13 +11,11 @@
 #include <unordered_set>
 #include <vector>
 
-// Third-Party Library Headers
-#include <nlohmann/json.hpp>
-#include <yaml-cpp/yaml.h>
-
 // Project-Specific Headers
 #include "../include/ConfigSingleton.h"
 #include "../include/debugUtils.h"
+#include "../include/jsonParser.h"
+#include "../include/yamlParser.h"
 
 
 std::unordered_map<std::string, std::string> readMappingFile(const std::string &filePath);
@@ -53,23 +51,34 @@ std::unordered_set<int> parseTalkgroupIDs(const std::string &idString)
 // Function to read talkgroup-specific file mappings from config.yaml
 std::unordered_map<int, TalkgroupFiles> readTalkgroupFileMappings(const std::string &configFilePath)
 {
-    YAML::Node config = YAML::LoadFile(configFilePath);
+    YamlNode config = YamlParser::loadFile(configFilePath);
     std::unordered_map<int, TalkgroupFiles> mappings;
 
-    if (config["talkgroupFiles"])
+    const YamlNode &tgFilesNode = config["TALKGROUP_FILES"];
+    auto tgKeys = tgFilesNode.getKeys();
+    for (const auto &tgKey : tgKeys)
     {
-        for (const auto &tg : config["talkgroupFiles"])
+        auto ids = parseTalkgroupIDs(tgKey);
+        TalkgroupFiles files;
+        const YamlNode &tgNode = tgFilesNode[tgKey];
+        const YamlNode &glossaryNode = tgNode["GLOSSARY"];
+        
+        // Handle GLOSSARY as a vector of strings
+        if (std::holds_alternative<std::vector<std::string>>(glossaryNode.getValue()))
         {
-            auto ids = parseTalkgroupIDs(tg.first.as<std::string>());
-            TalkgroupFiles files;
-            for (const auto &file : tg.second["glossary"])
-            {
-                files.glossaryFiles.push_back(file.as<std::string>());
+            files.glossaryFiles = std::get<std::vector<std::string>>(glossaryNode.getValue());
+        }
+
+        // Parse optional PROMPT field
+        try {
+            if (tgNode.hasKey("PROMPT")) {
+                files.prompt = tgNode["PROMPT"].as<std::string>();
             }
-            for (int id : ids)
-            {
-                mappings[id] = files;
-            }
+        } catch (...) {}
+
+        for (int id : ids)
+        {
+            mappings[id] = files;
         }
     }
     return mappings;
@@ -133,57 +142,64 @@ std::unordered_map<std::string, std::string> readMappingFile(const std::string &
         }
         return mapping;
     }
+    file.close(); // Close the file since JsonParser will open it again
 
     try
     {
-        nlohmann::json j;
-        file >> j;
-        // if (ConfigSingleton::getInstance().isDebugTranscriptionProcessor())
-        // {
-        //     std::cerr << "[" << getCurrentTime() << "] "
-        //               << "transcriptionProcessor.cpp readMappingFile JSON: " << j << std::endl;
-        // }
-        for (const auto &[key, value] : j.items())
-        {
-            if (value.is_string())
-            {
-                mapping[key] = value.get<std::string>();
+        // Try new multi-key glossary format first
+        auto glossaryEntries = JsonParser::parseGlossaryFile(filePath);
+        if (!glossaryEntries.empty()) {
+            for (const auto &entry : glossaryEntries) {
+                for (const auto &key : entry.keys) {
+                    mapping[key] = entry.value;
+                }
             }
-            else if (value.is_number())
+        } else {
+            // Fall back to old flat format
+            JsonParser::JsonObject j = JsonParser::parseFile(filePath);
+
+            for (const auto &[key, value] : j)
             {
-                mapping[key] = std::to_string(value.get<int>());
-            }
-            else if (value.is_array())
-            {
-                std::cerr << "[" << getCurrentTime() << "] "
-                          << "transcriptionProcessor.cpp readMappingFile Array type detected for key: " << key << "in " << filePath << std::endl;
-            }
-            else if (value.is_object())
-            {
-                // std::stringstream ss;
-                // ss << value;
-                // mapping[key] = ss.str();
-                std::cerr << "[" << getCurrentTime() << "] "
-                          << "transcriptionProcessor.cpp readMappingFile Object type detected for key: " << key << "in " << filePath << std::endl;
-            }
-            else if (value.is_boolean())
-            {
-                std::cerr << "[" << getCurrentTime() << "] "
-                          << "transcriptionProcessor.cpp readMappingFile Boolean type detected for key: " << key << "in " << filePath << std::endl;
-            }
-            else if (value.is_null())
-            {
-                std::cerr << "[" << getCurrentTime() << "] "
-                          << "transcriptionProcessor.cpp readMappingFile Null type detected for key: " << key << "in " << filePath << std::endl;
-            }
-            else
-            {
-                std::cerr << "[" << getCurrentTime() << "] "
-                          << "transcriptionProcessor.cpp readMappingFile Unexpected type for key: " << key << "in " << filePath << std::endl;
+                if (std::holds_alternative<std::string>(value))
+                {
+                    mapping[key] = std::get<std::string>(value);
+                }
+                else if (std::holds_alternative<double>(value))
+                {
+                    double num = std::get<double>(value);
+                    if (num == static_cast<int>(num)) {
+                        mapping[key] = std::to_string(static_cast<int>(num));
+                    } else {
+                        mapping[key] = std::to_string(num);
+                    }
+                }
+                else if (std::holds_alternative<bool>(value))
+                {
+                    std::cerr << "[" << getCurrentTime() << "] "
+                              << "transcriptionProcessor.cpp readMappingFile Boolean type detected for key: " << key << " in " << filePath << std::endl;
+                }
+                else if (std::holds_alternative<std::nullptr_t>(value))
+                {
+                    std::cerr << "[" << getCurrentTime() << "] "
+                              << "transcriptionProcessor.cpp readMappingFile Null type detected for key: " << key << " in " << filePath << std::endl;
+                }
             }
         }
+
+        // Generate hyphen-stripped variants for all keys containing hyphens
+        std::unordered_map<std::string, std::string> hyphenVariants;
+        for (const auto &[key, value] : mapping) {
+            if (key.find('-') != std::string::npos) {
+                std::string stripped = key;
+                stripped.erase(std::remove(stripped.begin(), stripped.end(), '-'), stripped.end());
+                if (mapping.find(stripped) == mapping.end()) {
+                    hyphenVariants[stripped] = value;
+                }
+            }
+        }
+        mapping.insert(hyphenVariants.begin(), hyphenVariants.end());
     }
-    catch (const nlohmann::json::exception &e)
+    catch (const std::exception &e)
     {
         std::cerr << "[" << getCurrentTime() << "] "
                   << "transcriptionProcessor.cpp readMappingFile JSON Error: " << e.what() << std::endl;

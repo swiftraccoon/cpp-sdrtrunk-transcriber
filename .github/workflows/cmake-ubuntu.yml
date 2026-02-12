@@ -28,24 +28,14 @@ jobs:
         sudo apt-get install -y \
           build-essential \
           cmake \
-          ffmpeg \
-          libavcodec-dev \
-          libavutil-dev \
-          libavformat-dev \
           libcurl4-openssl-dev \
           libsqlite3-dev \
-          pkg-config \
-          libyaml-cpp-dev
+          libmpg123-dev \
+          python3-dev \
+          pkg-config
 
-    - name: Setup external dependencies
+    - name: Setup build directory
       run: |
-        git submodule update --init --recursive
-        if [ ! -d "external/yaml-cpp/.git" ]; then
-          git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
-        fi
-        if [ ! -d "external/CLI11/.git" ]; then
-          git clone https://github.com/CLIUtils/CLI11.git external/CLI11
-        fi
         mkdir -p build
         cp sample-config.yaml build/config.yaml
 

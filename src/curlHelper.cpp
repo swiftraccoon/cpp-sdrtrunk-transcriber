@@ -37,7 +37,7 @@ void setupCurlHeaders(CURL *curl, struct curl_slist *&headers, const std::string
 }
 
 // Setup CURL post fields
-void setupCurlPostFields(CURL *curl, curl_mime *&mime, const std::string &file_path)
+void setupCurlPostFields(CURL *curl, curl_mime *&mime, const std::string &file_path, const std::string &prompt)
 {
     curl_mimepart *part;
     mime = curl_mime_init(curl);
@@ -63,6 +63,13 @@ void setupCurlPostFields(CURL *curl, curl_mime *&mime, const std::string &file_p
     part = curl_mime_addpart(mime);
     curl_mime_name(part, "language");
     curl_mime_data(part, "en", CURL_ZERO_TERMINATED);
+
+    // Add optional prompt for per-talkgroup context
+    if (!prompt.empty()) {
+        part = curl_mime_addpart(mime);
+        curl_mime_name(part, "prompt");
+        curl_mime_data(part, prompt.c_str(), CURL_ZERO_TERMINATED);
+    }
 }
 
 // Make a CURL request and return the response
@@ -175,7 +182,7 @@ void handleRateLimiting()
 }
 
 // Transcribe audio using CURL
-std::string curl_transcribe_audio(const std::string &file_path, const std::string &OPENAI_API_KEY)
+std::string curl_transcribe_audio(const std::string &file_path, const std::string &OPENAI_API_KEY, const std::string &prompt)
 {
     int maxRetries = config.getMaxRetries();
     int maxRequestsPerMinute = config.getMaxRequestsPerMinute();
@@ -215,7 +222,7 @@ std::string curl_transcribe_audio(const std::string &file_path, const std::strin
             setupCurlHeaders(curl, headers, OPENAI_API_KEY);
 
             curl_mime *mime;
-            setupCurlPostFields(curl, mime, file_path);
+            setupCurlPostFields(curl, mime, file_path, prompt);
 
             curl_easy_setopt(curl, CURLOPT_URL, API_URL.c_str());
             curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);

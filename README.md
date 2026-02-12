@@ -17,12 +17,14 @@ A C++ application designed to monitor directories for SDRTrunk P25 MP3 recording
 ## Features at a Glance
 
 - **Dual Transcription Modes**: Local processing with faster-whisper or cloud-based with OpenAI API
+- **Per-Talkgroup Prompts**: Optional Whisper API prompt per talkgroup for improved accuracy
+- **Parallel Processing**: Thread pool with configurable `MAX_THREADS` for concurrent file processing
 - **File Processing**: Parsing of SDRTrunk filename metadata
-- **Database Management**: SQLite3 storage for transcriptions and metadata
-- **Terminology Translation**: Automatic tencode, signal, and callsign translation
+- **Database Management**: SQLite3 with WAL mode, indexes, thread-safe writes, and auto-migration
+- **Terminology Translation**: Automatic tencode, signal, and callsign translation with multi-key glossary support
 - **Cross-Platform**: Supports Linux and Windows (experimental)
 - **Rate Limiting**: Built-in API rate limiting and error handling
-- **Configurable**: Comprehensive YAML-based configuration system 
+- **Configurable**: Comprehensive YAML-based configuration system
 
 ## Related Projects
 - [sdrtrunk-transcriber](https://github.com/swiftraccoon/sdrtrunk-transcriber) (Python version of this repo)
@@ -56,13 +58,11 @@ A C++ application designed to monitor directories for SDRTrunk P25 MP3 recording
 
 ```bash
 # 1. Install dependencies (Ubuntu/Debian)
-sudo apt-get install ffmpeg libavcodec-dev libcurl4-openssl-dev libsqlite3-dev pkg-config libyaml-cpp-dev
+sudo apt-get install libmpg123-dev libcurl4-openssl-dev libsqlite3-dev python3-dev pkg-config
 
 # 2. Clone and build
 git clone https://github.com/swiftraccoon/cpp-sdrtrunk-transcriber.git
 cd cpp-sdrtrunk-transcriber
-git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
-git clone https://github.com/CLIUtils/CLI11.git external/CLI11
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 
@@ -83,8 +83,11 @@ cp sample-config.yaml config.yaml
 - **Dual Transcription**: Choose between OpenAI API or local faster-whisper processing
 
 ### Advanced Features
+- **Per-Talkgroup Prompts**: Optional Whisper API prompt per talkgroup to improve transcription accuracy
+- **Multi-Key Glossary**: New glossary format supporting multiple keys per entry and automatic hyphen-stripped matching
+- **Parallel Processing**: Configurable thread pool (`MAX_THREADS`) with `-p` flag for concurrent file processing
 - **Intelligent Translation**: Searches transcriptions for tencodes, signals, and callsigns with automatic translation lookup
-- **Database Management**: Comprehensive SQLite3 storage with full metadata tracking
+- **Database Management**: SQLite3 with WAL mode, indexes, unique constraints, thread-safe writes, and automatic schema migration
 - **Rate Limiting**: Built-in API rate limiting with configurable thresholds
 - **Error Handling**: Robust retry logic with automatic failure recovery
 - **Performance Monitoring**: Configurable debug output for all major components
@@ -95,17 +98,14 @@ cp sample-config.yaml config.yaml
 ### Prerequisites
 
 **System Requirements:**
-- C++17 compatible compiler (GCC 7+, Clang 7+, MSVC 2019+)
+- C++23 compatible compiler (GCC 14+, Clang 18+)
 - CMake 3.16 or higher
 - Git
 
 **Core Dependencies:**
-- FFmpeg (audio processing)
+- libmpg123 (MP3 duration extraction)
 - SQLite3 (database)
 - libcurl (HTTP client)
-- yaml-cpp (configuration)
-- CLI11 (command line parsing)
-- nlohmann/json (JSON processing)
 
 ### Platform-Specific Instructions
 
@@ -113,20 +113,20 @@ cp sample-config.yaml config.yaml
 ```bash
 sudo apt-get update
 sudo apt-get install build-essential cmake git pkg-config \
-    ffmpeg libavcodec-dev libcurl4-openssl-dev \
-    libsqlite3-dev libyaml-cpp-dev
+    libmpg123-dev libcurl4-openssl-dev \
+    libsqlite3-dev python3-dev
 ```
 
 #### Fedora/RHEL/CentOS
 ```bash
 sudo dnf install gcc-c++ cmake git pkg-config \
-    ffmpeg ffmpeg-devel libcurl-devel \
-    sqlite-devel yaml-cpp-devel
+    mpg123-devel libcurl-devel \
+    sqlite-devel python3-devel
 ```
 
 #### macOS (via Homebrew)
 ```bash
-brew install cmake ffmpeg sqlite3 curl yaml-cpp
+brew install cmake mpg123 sqlite3 curl python3
 ```
 
 #### Windows
@@ -137,9 +137,8 @@ git clone https://github.com/Microsoft/vcpkg.git
 .\vcpkg\bootstrap-vcpkg.bat
 
 # Install dependencies
-.\vcpkg\vcpkg install curl sqlite3 yaml-cpp --triplet x64-windows
+.\vcpkg\vcpkg install curl sqlite3 mpg123 --triplet x64-windows
 ```
-Also ensure FFmpeg is available in your system PATH.
 
 ### Building from Source
 
@@ -149,13 +148,7 @@ Also ensure FFmpeg is available in your system PATH.
    cd cpp-sdrtrunk-transcriber
    ```
 
-2. **Initialize external dependencies:**
-   ```bash
-   git clone https://github.com/jbeder/yaml-cpp.git external/yaml-cpp
-   git clone https://github.com/CLIUtils/CLI11.git external/CLI11
-   ```
-
-3. **Configure and build:**
+2. **Configure and build:**
    ```bash
    # Release build (recommended)
    cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -166,7 +159,7 @@ Also ensure FFmpeg is available in your system PATH.
    cmake --build build --config Debug
    ```
 
-4. **Install (optional):**
+3. **Install (optional):**
    ```bash
    sudo cmake --install build
    ```
@@ -203,17 +196,23 @@ MIN_DURATION_SECONDS: 9
 OPENAI_API_KEY: "your_api_key_here"
 MAX_REQUESTS_PER_MINUTE: 50
 MAX_RETRIES: 3
+ERROR_WINDOW_SECONDS: 300
+RATE_LIMIT_WINDOW_SECONDS: 60
 ```
 
-**Talkgroup-Specific Glossaries:**
+**Talkgroup-Specific Glossaries and Prompts:**
 ```yaml
 TALKGROUP_FILES:
   52197-52201:  # Range of talkgroup IDs
     GLOSSARY:
       - "/path/to/tencode_glossary.json"
       - "/path/to/signals_glossary.json"
+    PROMPT: "Police radio dispatch, North Carolina State Highway Patrol."
   28513,41003,41004:  # Specific talkgroup IDs
     GLOSSARY: ["/path/to/tencode_glossary.json"]
+
+# Thread pool for parallel processing (used with -p flag)
+MAX_THREADS: 4
 ```
 
 See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for complete configuration reference.
@@ -241,8 +240,8 @@ After building and configuring, run the transcriber:
 |--------|-------------|----------|
 | `-c, --config <path>` | Configuration file path | `./config.yaml` |
 | `-l, --local` | Enable local transcription (faster-whisper) | Off (uses OpenAI API) |
+| `-p, --parallel` | Enable parallel file processing (uses MAX_THREADS from config) | Off (single-threaded) |
 | `-h, --help` | Display help message and exit | - |
-| `-v, --version` | Display version information | - |
 
 ### Examples
 

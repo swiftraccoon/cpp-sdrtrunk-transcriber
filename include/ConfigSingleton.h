@@ -4,16 +4,14 @@
 // Standard Library Headers
 #include <string>
 
-// Third-Party Library Headers
-#include <yaml-cpp/yaml.h>
-
 #include "transcriptionProcessor.h"
+#include "yamlParser.h"
 
 class ConfigSingleton
 {
 public:
     static ConfigSingleton &getInstance();
-    void initialize(const YAML::Node &config);
+    void initialize(const YamlNode &config);
 
     std::string getOpenAIAPIKey() const;
     const std::unordered_map<int, TalkgroupFiles>& getTalkgroupFiles() const;
@@ -25,6 +23,7 @@ public:
     int getErrorWindowSeconds() const;
     int getRateLimitWindowSeconds() const;
     int getMinDurationSeconds() const;
+    int getMaxThreads() const;
     bool isDebugCurlHelper() const;
     bool isDebugDatabaseManager() const;
     bool isDebugFileProcessor() const;
@@ -47,6 +46,7 @@ private:
     int errorWindowSeconds;
     int rateLimitWindowSeconds;
     int minDurationSeconds;
+    int maxThreads;
     bool debugCurlHelper;
     bool debugDatabaseManager;
     bool debugFileProcessor;
