@@ -57,3 +57,4 @@ ffmpeg_source/
 sdrtrunk/
 __pycache__/
 test/test_data/
+.github/workflows/test-release.yml
