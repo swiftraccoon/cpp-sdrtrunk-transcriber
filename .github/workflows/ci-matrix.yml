@@ -14,7 +14,7 @@ jobs:
   test-matrix:
     name: ${{ matrix.os }}-${{ matrix.compiler }}
     runs-on: ${{ matrix.os }}
-    
+
     strategy:
       fail-fast: false
       matrix:
@@ -39,10 +39,7 @@ jobs:
             compiler: gcc
             cc: gcc
             cxx: g++
-          # Windows 2022 with MSVC
-          - os: windows-2022
-            compiler: msvc
-          # Windows latest with MSVC (future-proof)
+          # Windows latest with MSVC
           - os: windows-latest
             compiler: msvc
 
@@ -61,7 +58,7 @@ jobs:
         elif [[ "${{ matrix.compiler }}" == "gcc-14" ]]; then
           sudo apt-get install -y gcc-14 g++-14
         elif [[ "${{ matrix.compiler }}" == "clang-18" ]]; then
-          sudo apt-get install -y clang-18
+          sudo apt-get install -y clang-18 libstdc++-14-dev
         fi
         echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
         echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
@@ -94,12 +91,20 @@ jobs:
         .\vcpkg\vcpkg integrate install
       shell: pwsh
 
+    - name: Cache vcpkg packages (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/vcpkg/installed
+        key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/vcpkg.json') }}
+        restore-keys: |
+          ${{ runner.os }}-vcpkg-
+
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
         .\vcpkg\vcpkg install
       shell: pwsh
-
 
     - name: Configure CMake (Ubuntu)
       if: runner.os == 'Linux'
