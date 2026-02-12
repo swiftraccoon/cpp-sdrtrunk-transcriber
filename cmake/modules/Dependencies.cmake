@@ -78,6 +78,10 @@ if(WIN32)
     # On Windows, use vcpkg or manual installation
     if(DEFINED CMAKE_TOOLCHAIN_FILE AND CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
         find_package(mpg123 CONFIG REQUIRED)
+        # vcpkg creates MPG123::libmpg123 target but doesn't set the
+        # MPG123_LIBRARIES/MPG123_INCLUDE_DIRS variables used by CMakeLists.txt
+        set(MPG123_LIBRARIES MPG123::libmpg123)
+        set(MPG123_INCLUDE_DIRS "")
     else()
         # Try to find mpg123 manually
         find_path(MPG123_INCLUDE_DIR mpg123.h)
@@ -86,6 +90,8 @@ if(WIN32)
             add_library(mpg123 INTERFACE)
             target_include_directories(mpg123 INTERFACE ${MPG123_INCLUDE_DIR})
             target_link_libraries(mpg123 INTERFACE ${MPG123_LIBRARY})
+            set(MPG123_LIBRARIES mpg123)
+            set(MPG123_INCLUDE_DIRS ${MPG123_INCLUDE_DIR})
             set(MPG123_FOUND TRUE)
         else()
             message(FATAL_ERROR "mpg123 is required but not found. Please install mpg123 or use vcpkg.")

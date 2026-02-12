@@ -19,16 +19,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Ubuntu 22.04 with GCC 11
-          - os: ubuntu-22.04
-            compiler: gcc-11
-            cc: gcc-11
-            cxx: g++-11
-          # Ubuntu 22.04 with Clang 14
-          - os: ubuntu-22.04
-            compiler: clang-14
-            cc: clang-14
-            cxx: clang++-14
+          # Ubuntu 24.04 with GCC 13 (minimum C++23-capable GCC)
+          - os: ubuntu-24.04
+            compiler: gcc-13
+            cc: gcc-13
+            cxx: g++-13
+          # Ubuntu 24.04 with GCC 14
+          - os: ubuntu-24.04
+            compiler: gcc-14
+            cc: gcc-14
+            cxx: g++-14
+          # Ubuntu 24.04 with Clang 18
+          - os: ubuntu-24.04
+            compiler: clang-18
+            cc: clang-18
+            cxx: clang++-18
           # Ubuntu latest with default compiler
           - os: ubuntu-latest
             compiler: gcc
@@ -50,12 +55,13 @@ jobs:
     - name: Setup compiler (Ubuntu)
       if: runner.os == 'Linux'
       run: |
-        if [[ "${{ matrix.compiler }}" == "gcc-11" ]]; then
-          sudo apt-get update
-          sudo apt-get install -y gcc-11 g++-11
-        elif [[ "${{ matrix.compiler }}" == "clang-14" ]]; then
-          sudo apt-get update
-          sudo apt-get install -y clang-14
+        sudo apt-get update
+        if [[ "${{ matrix.compiler }}" == "gcc-13" ]]; then
+          sudo apt-get install -y gcc-13 g++-13
+        elif [[ "${{ matrix.compiler }}" == "gcc-14" ]]; then
+          sudo apt-get install -y gcc-14 g++-14
+        elif [[ "${{ matrix.compiler }}" == "clang-18" ]]; then
+          sudo apt-get install -y clang-18
         fi
         echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
         echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
