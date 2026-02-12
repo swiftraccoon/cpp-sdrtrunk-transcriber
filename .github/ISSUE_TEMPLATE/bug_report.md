@@ -44,7 +44,7 @@ What actually happened. Include error messages, unexpected output, etc.
 **System Information:**
 - OS: [e.g., Ubuntu 22.04, Windows 11, macOS 13]
 - Architecture: [e.g., x86_64, ARM64]
-- Compiler: [e.g., GCC 11.2, Clang 14, MSVC 2022]
+- Compiler: [e.g., GCC 14, Clang 19, MSVC 2022]
 - CMake version: [e.g., 3.22]
 
 **Application Information:**

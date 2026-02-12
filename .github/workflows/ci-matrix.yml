@@ -29,11 +29,11 @@ jobs:
             compiler: gcc-14
             cc: gcc-14
             cxx: g++-14
-          # Ubuntu 24.04 with Clang 18
+          # Ubuntu 24.04 with Clang 19 (18 lacks __cpp_concepts >= 202002L for std::expected)
           - os: ubuntu-24.04
-            compiler: clang-18
-            cc: clang-18
-            cxx: clang++-18
+            compiler: clang-19
+            cc: clang-19
+            cxx: clang++-19
           # Ubuntu latest with default compiler
           - os: ubuntu-latest
             compiler: gcc
@@ -57,8 +57,8 @@ jobs:
           sudo apt-get install -y gcc-13 g++-13
         elif [[ "${{ matrix.compiler }}" == "gcc-14" ]]; then
           sudo apt-get install -y gcc-14 g++-14
-        elif [[ "${{ matrix.compiler }}" == "clang-18" ]]; then
-          sudo apt-get install -y clang-18 libstdc++-14-dev
+        elif [[ "${{ matrix.compiler }}" == "clang-19" ]]; then
+          sudo apt-get install -y clang-19
         fi
         echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
         echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV

@@ -98,7 +98,7 @@ cp sample-config.yaml config.yaml
 ### Prerequisites
 
 **System Requirements:**
-- C++23 compatible compiler (GCC 14+, Clang 18+)
+- C++23 compatible compiler (GCC 13+, Clang 19+, MSVC 2022+)
 - CMake 3.16 or higher
 - Git
 

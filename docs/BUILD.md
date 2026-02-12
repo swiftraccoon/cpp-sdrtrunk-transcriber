@@ -51,10 +51,9 @@ cmake --build build --parallel $(nproc)
 
 ### Software Requirements
 
-- **C++ Compiler**: GCC 7+, Clang 7+, or MSVC 2019+
-- **CMake**: Version 3.16 or higher
-- **Git**: For cloning repositories and submodules
-- **FFmpeg**: For audio file processing and validation
+- **C++ Compiler**: GCC 13+, Clang 19+, or MSVC 2022+ (C++23 required)
+- **CMake**: Version 3.25 or higher
+- **Git**: For cloning repositories
 
 ### Supported Platforms
 

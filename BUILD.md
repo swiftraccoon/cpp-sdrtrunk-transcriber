@@ -6,12 +6,11 @@ This document provides comprehensive instructions for building the SDRTrunk Tran
 
 ### Required Dependencies
 
-- **CMake** 3.16 or newer
-- **C++ Compiler** with C++17 support:
-  - GCC 7.0+ (Linux)
-  - Clang 5.0+ (Linux/macOS)
-  - Visual Studio 2019+ (Windows)
-  - Xcode 10+ (macOS)
+- **CMake** 3.25 or newer
+- **C++ Compiler** with C++23 support:
+  - GCC 13+ (Linux)
+  - Clang 19+ (Linux/macOS)
+  - Visual Studio 2022+ (Windows)
 
 ### System Dependencies
 
